@@ -1,0 +1,8 @@
+build/
+dist/
+*.spec
+*.exe
+assets/icon.png
+
+__pycache__/
+*.pyc

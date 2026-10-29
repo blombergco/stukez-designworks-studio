@@ -1,0 +1,69 @@
+# Builds the installer and publishes it as a GitHub Release when a version tag is pushed:
+#   git tag v1.1.0 && git push origin v1.1.0
+# The release carries StukeZ-Designworks-Studio-<version>-Setup.exe and its .sha256 file, which is what the program's
+# update check downloads and verifies. This file must sit in the repository's root (.github/workflows/).
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Check that the tag matches the program version
+        shell: pwsh
+        run: |
+          $v = (python -c "from stukez_studio import __version__; print(__version__)").Trim()
+          if ($env:GITHUB_REF_TYPE -eq "tag" -and $env:GITHUB_REF_NAME -ne "v$v") { throw "Tag $env:GITHUB_REF_NAME does not match version $v in stukez_studio/__init__.py" }
+
+      - name: Install Inno Setup
+        shell: pwsh
+        run: choco install innosetup --yes --no-progress
+
+      - name: Build the installer
+        shell: pwsh
+        run: ./build_installer.ps1
+
+      - name: Smoke test the built program in a fresh workspace
+        shell: pwsh
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: |
+          $env:KAIZEN_SELFTEST_CREATE = (Join-Path $PWD "smoke_ws")
+          $env:KAIZEN_SELFTEST = (Join-Path $PWD "smoke.png")
+          $env:KAIZEN_SELFTEST_SAVE = "1"
+          & "dist/StukeZ Designworks Studio/StukeZ Designworks Studio.exe"
+          if (-not (Test-Path smoke.png)) { throw "The program did not start" }
+          if (Test-Path smoke.png.err) { throw (Get-Content smoke.png.err -Raw) }
+
+      - name: Take the release notes from CHANGELOG.md
+        shell: pwsh
+        run: |
+          $v = (python -c "from stukez_studio import __version__; print(__version__)").Trim()
+          $text = Get-Content CHANGELOG.md -Raw
+          $m = [regex]::Match($text, "(?ms)^## $([regex]::Escape($v))\b[^\r\n]*\r?\n(.*?)(?=^## |\z)")
+          if (-not $m.Success) { throw "CHANGELOG.md has no entry for version $v" }
+          $m.Groups[1].Value.Trim() | Out-File RELEASE_NOTES.md -Encoding utf8
+
+      - name: Publish the release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/installer/*-Setup.exe
+            dist/installer/*-Setup.exe.sha256
+          body_path: RELEASE_NOTES.md
+          generate_release_notes: false

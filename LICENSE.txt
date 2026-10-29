@@ -1,0 +1,11 @@
+StukeZ Designworks Studio
+Copyright (c) 2026 StukeZ Designworks. All rights reserved.
+
+You may install and use the program free of charge. You may not copy, sell, modify or redistribute the program or its source
+code without written permission.
+
+The program contains open source components that keep their own licences; they are listed in legal/THIRD_PARTY_NOTICES.txt
+and nothing here limits your rights under those licences (including your right to replace the Qt libraries, which are
+installed as separate files).
+
+The program is provided as it is, without any warranty. Keep a backup of your workspace folder.

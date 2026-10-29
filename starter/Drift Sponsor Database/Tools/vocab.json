@@ -1,0 +1,504 @@
+{
+ "categories": [
+  "Suspension",
+  "Steering and Angle",
+  "Engine",
+  "Block",
+  "Cylinder Head",
+  "Turbo and Supercharger",
+  "Exhaust Manifold",
+  "Exhaust",
+  "Intake and Induction",
+  "Cooling",
+  "Injectors",
+  "Fuel System",
+  "Ignition",
+  "ECU",
+  "Gauges and Electronics",
+  "Drivetrain",
+  "Brakes",
+  "Body and Aero",
+  "Wheels",
+  "Tires",
+  "Lubricants and Fluids",
+  "Safety and Interior",
+  "Swap Kits and Mounts",
+  "Wraps Paint and Lighting"
+ ],
+ "chassis": {
+  "S12": {
+   "label": "Nissan Silvia/180SX S12 / 200SX",
+   "family": "S-chassis"
+  },
+  "S13": {
+   "label": "Nissan Silvia S13 / 180SX / 200SX (RPS13)",
+   "family": "S-chassis"
+  },
+  "S14": {
+   "label": "Nissan Silvia S14 / 200SX (zenki/kouki)",
+   "family": "S-chassis"
+  },
+  "S15": {
+   "label": "Nissan Silvia S15 / 200SX",
+   "family": "S-chassis"
+  },
+  "R32": {
+   "label": "Nissan Skyline R32",
+   "family": "R-chassis"
+  },
+  "R33": {
+   "label": "Nissan Skyline R33",
+   "family": "R-chassis"
+  },
+  "R34": {
+   "label": "Nissan Skyline R34",
+   "family": "R-chassis"
+  },
+  "Z32": {
+   "label": "Nissan 300ZX Z32 / Fairlady Z",
+   "family": "Z-chassis"
+  },
+  "Z33": {
+   "label": "Nissan 350Z Z33",
+   "family": "Z-chassis"
+  },
+  "Z34": {
+   "label": "Nissan 370Z Z34",
+   "family": "Z-chassis"
+  },
+  "RZ34": {
+   "label": "Nissan Z / 400Z RZ34",
+   "family": "Z-chassis"
+  },
+  "A31": {
+   "label": "Nissan Cefiro A31",
+   "family": ""
+  },
+  "C33": {
+   "label": "Nissan Laurel C33",
+   "family": ""
+  },
+  "V35": {
+   "label": "Nissan Skyline V35 / Infiniti G35",
+   "family": ""
+  },
+  "V36": {
+   "label": "Nissan Skyline V36 / Infiniti G37",
+   "family": ""
+  },
+  "Q50": {
+   "label": "Infiniti Q50 / Nissan Skyline V37",
+   "family": ""
+  },
+  "R35": {
+   "label": "Nissan GT-R R35",
+   "family": ""
+  },
+  "AE86": {
+   "label": "Toyota Corolla Levin / Sprinter Trueno AE86",
+   "family": ""
+  },
+  "JZX90": {
+   "label": "Toyota Mark II / Chaser / Cresta JZX90",
+   "family": "JZX"
+  },
+  "JZX100": {
+   "label": "Toyota Mark II / Chaser / Cresta JZX100",
+   "family": "JZX"
+  },
+  "JZX110": {
+   "label": "Toyota Mark II / Chaser / Cresta JZX110",
+   "family": "JZX"
+  },
+  "JZZ30": {
+   "label": "Toyota Soarer JZZ30 / Lexus SC300/400",
+   "family": ""
+  },
+  "JZA70": {
+   "label": "Toyota Supra A70 (Mk3)",
+   "family": "Supra"
+  },
+  "JZA80": {
+   "label": "Toyota Supra A80 (Mk4)",
+   "family": "Supra"
+  },
+  "A90": {
+   "label": "Toyota GR Supra A90 (Mk5)",
+   "family": "Supra"
+  },
+  "ZN6": {
+   "label": "Toyota GT86 / Scion FR-S / Subaru BRZ ZC6 (FA20)",
+   "family": "86/BRZ"
+  },
+  "ZN8": {
+   "label": "Toyota GR86 / Subaru BRZ ZD8 (FA24)",
+   "family": "86/BRZ"
+  },
+  "SXE10": {
+   "label": "Toyota Altezza / Lexus IS200/IS300 SXE10/JCE10",
+   "family": ""
+  },
+  "XE20": {
+   "label": "Lexus IS250/IS350 XE20",
+   "family": ""
+  },
+  "S160": {
+   "label": "Toyota Aristo / Lexus GS300 S160",
+   "family": ""
+  },
+  "FC3S": {
+   "label": "Mazda RX-7 FC3S",
+   "family": "RX-7"
+  },
+  "FD3S": {
+   "label": "Mazda RX-7 FD3S",
+   "family": "RX-7"
+  },
+  "SE3P": {
+   "label": "Mazda RX-8 SE3P",
+   "family": ""
+  },
+  "NA": {
+   "label": "Mazda MX-5 / Miata NA",
+   "family": "MX-5"
+  },
+  "NB": {
+   "label": "Mazda MX-5 / Miata NB",
+   "family": "MX-5"
+  },
+  "NC": {
+   "label": "Mazda MX-5 / Miata NC",
+   "family": "MX-5"
+  },
+  "ND": {
+   "label": "Mazda MX-5 / Miata ND",
+   "family": "MX-5"
+  },
+  "S2000": {
+   "label": "Honda S2000 AP1/AP2",
+   "family": ""
+  },
+  "E30": {
+   "label": "BMW 3-series E30",
+   "family": "BMW"
+  },
+  "E36": {
+   "label": "BMW 3-series E36",
+   "family": "BMW"
+  },
+  "E46": {
+   "label": "BMW 3-series E46",
+   "family": "BMW"
+  },
+  "E9x": {
+   "label": "BMW 3-series E90/E92/E93 (and E82/E88)",
+   "family": "BMW"
+  },
+  "F8x": {
+   "label": "BMW F2x/F3x/F8x (M2/M3/M4 and 2/3/4-series)",
+   "family": "BMW"
+  },
+  "E39": {
+   "label": "BMW 5-series E39",
+   "family": "BMW"
+  },
+  "Fox": {
+   "label": "Ford Mustang Fox Body (1979-93)",
+   "family": "Mustang"
+  },
+  "SN95": {
+   "label": "Ford Mustang SN95 (1994-2004)",
+   "family": "Mustang"
+  },
+  "S197": {
+   "label": "Ford Mustang S197 (2005-2014)",
+   "family": "Mustang"
+  },
+  "S550": {
+   "label": "Ford Mustang S550 (2015-2023)",
+   "family": "Mustang"
+  },
+  "S650": {
+   "label": "Ford Mustang S650 (2024+)",
+   "family": "Mustang"
+  },
+  "Camaro-4G": {
+   "label": "Chevrolet Camaro 4th gen (1993-2002) / Firebird",
+   "family": "Camaro"
+  },
+  "Camaro-5G": {
+   "label": "Chevrolet Camaro 5th gen (2010-2015)",
+   "family": "Camaro"
+  },
+  "Camaro-6G": {
+   "label": "Chevrolet Camaro 6th gen (2016+)",
+   "family": "Camaro"
+  },
+  "C5": {
+   "label": "Chevrolet Corvette C5",
+   "family": "Corvette"
+  },
+  "C6": {
+   "label": "Chevrolet Corvette C6",
+   "family": "Corvette"
+  },
+  "C7": {
+   "label": "Chevrolet Corvette C7",
+   "family": "Corvette"
+  },
+  "C8": {
+   "label": "Chevrolet Corvette C8",
+   "family": "Corvette"
+  },
+  "CTS-V": {
+   "label": "Cadillac CTS-V",
+   "family": ""
+  },
+  "VE": {
+   "label": "Holden Commodore VE / HSV",
+   "family": ""
+  },
+  "Challenger": {
+   "label": "Dodge Challenger",
+   "family": "Mopar"
+  },
+  "Charger": {
+   "label": "Dodge Charger",
+   "family": "Mopar"
+  },
+  "Volvo-240": {
+   "label": "Volvo 240/740/940 (RWD)",
+   "family": ""
+  },
+  "GR-Corolla": {
+   "label": "Toyota GR Corolla (G16E-GTS)",
+   "family": ""
+  },
+  "E83": {
+   "label": "BMW X3 E83",
+   "family": "BMW"
+  },
+  "E82": {
+   "label": "BMW 1-series E82/E88 (1M)",
+   "family": "BMW"
+  },
+  "C35": {
+   "label": "Nissan Laurel C35",
+   "family": ""
+  },
+  "ER34": {
+   "label": "Nissan Skyline ER34 (25GT-T / sedan)",
+   "family": ""
+  },
+  "C34": {
+   "label": "Nissan Laurel C34",
+   "family": ""
+  },
+  "GR-Yaris": {
+   "label": "Toyota GR Yaris (GXPA16)",
+   "family": ""
+  },
+  "R31": {
+   "label": "Nissan Skyline R31",
+   "family": "R-chassis"
+  }
+ },
+ "engines": {
+  "SR20DET": {
+   "label": "Nissan SR20DET 2.0L turbo I4",
+   "family": "SR"
+  },
+  "SR20DE": {
+   "label": "Nissan SR20DE 2.0L NA I4",
+   "family": "SR"
+  },
+  "KA24DE": {
+   "label": "Nissan KA24DE 2.4L I4",
+   "family": "KA"
+  },
+  "KA24DET": {
+   "label": "Nissan KA24DE-T 2.4L turbo I4 (swap)",
+   "family": "KA"
+  },
+  "RB20DET": {
+   "label": "Nissan RB20DET 2.0L turbo I6",
+   "family": "RB"
+  },
+  "RB25DET": {
+   "label": "Nissan RB25DET 2.5L turbo I6",
+   "family": "RB"
+  },
+  "RB26DETT": {
+   "label": "Nissan RB26DETT 2.6L twin-turbo I6",
+   "family": "RB"
+  },
+  "RB30": {
+   "label": "Nissan RB30 3.0L I6 (stroker base)",
+   "family": "RB"
+  },
+  "VQ35DE": {
+   "label": "Nissan VQ35DE 3.5L V6",
+   "family": "VQ"
+  },
+  "VQ37VHR": {
+   "label": "Nissan VQ37VHR 3.7L V6",
+   "family": "VQ"
+  },
+  "VR30DDTT": {
+   "label": "Nissan VR30DDTT 3.0L twin-turbo V6",
+   "family": "VR"
+  },
+  "VR38DETT": {
+   "label": "Nissan VR38DETT 3.8L twin-turbo V6",
+   "family": "VR"
+  },
+  "1JZ-GTE": {
+   "label": "Toyota 1JZ-GTE 2.5L turbo I6",
+   "family": "1JZ"
+  },
+  "1JZ-GE": {
+   "label": "Toyota 1JZ-GE 2.5L NA I6",
+   "family": "1JZ"
+  },
+  "2JZ-GTE": {
+   "label": "Toyota 2JZ-GTE 3.0L turbo I6",
+   "family": "2JZ"
+  },
+  "2JZ-GE": {
+   "label": "Toyota 2JZ-GE 3.0L NA I6",
+   "family": "2JZ"
+  },
+  "3S-GTE": {
+   "label": "Toyota 3S-GTE 2.0L turbo I4",
+   "family": "3S"
+  },
+  "4A-GE": {
+   "label": "Toyota 4A-GE 1.6L I4 (16V/20V)",
+   "family": "4A"
+  },
+  "7M-GTE": {
+   "label": "Toyota 7M-GTE 3.0L turbo I6",
+   "family": "7M"
+  },
+  "1UZ-FE": {
+   "label": "Toyota 1UZ-FE 4.0L V8",
+   "family": "UZ"
+  },
+  "2UZ-FE": {
+   "label": "Toyota 2UZ-FE 4.7L V8",
+   "family": "UZ"
+  },
+  "2GR-FE": {
+   "label": "Toyota 2GR-FE 3.5L V6",
+   "family": "GR"
+  },
+  "FA20": {
+   "label": "Subaru/Toyota FA20 2.0L flat-4 (GT86/BRZ)",
+   "family": "FA"
+  },
+  "FA24": {
+   "label": "Subaru/Toyota FA24 2.4L flat-4 (GR86/BRZ)",
+   "family": "FA"
+  },
+  "B58": {
+   "label": "BMW B58 3.0L turbo I6",
+   "family": "BMW"
+  },
+  "13B-REW": {
+   "label": "Mazda 13B-REW twin-turbo rotary",
+   "family": "Rotary"
+  },
+  "13B-MSP": {
+   "label": "Mazda 13B-MSP Renesis rotary",
+   "family": "Rotary"
+  },
+  "F20C": {
+   "label": "Honda F20C/F22C S2000 I4",
+   "family": ""
+  },
+  "M50": {
+   "label": "BMW M20/M50/S50/S52 I6 (E30/E36 era)",
+   "family": "BMW"
+  },
+  "S54": {
+   "label": "BMW S54 3.2L I6 (E46 M3)",
+   "family": "BMW"
+  },
+  "N54": {
+   "label": "BMW N54 3.0L twin-turbo I6",
+   "family": "BMW"
+  },
+  "N55": {
+   "label": "BMW N55 3.0L turbo I6",
+   "family": "BMW"
+  },
+  "S65": {
+   "label": "BMW S65 4.0L V8 (E9x M3)",
+   "family": "BMW"
+  },
+  "LS1": {
+   "label": "GM LS1 5.7L V8 (Gen III)",
+   "family": "LSx"
+  },
+  "LS2": {
+   "label": "GM LS2 6.0L V8",
+   "family": "LSx"
+  },
+  "LS3": {
+   "label": "GM LS3 6.2L V8",
+   "family": "LSx"
+  },
+  "LS7": {
+   "label": "GM LS7 7.0L V8",
+   "family": "LSx"
+  },
+  "LS9": {
+   "label": "GM LS9 6.2L SC V8",
+   "family": "LSx"
+  },
+  "LSA": {
+   "label": "GM LSA 6.2L SC V8",
+   "family": "LSx"
+  },
+  "LT1": {
+   "label": "GM LT1 6.2L V8 (Gen V)",
+   "family": "LTx"
+  },
+  "LT4": {
+   "label": "GM LT4 6.2L SC V8",
+   "family": "LTx"
+  },
+  "Coyote": {
+   "label": "Ford Coyote 5.0L V8",
+   "family": "Ford V8"
+  },
+  "Modular": {
+   "label": "Ford 4.6/5.4L Modular V8",
+   "family": "Ford V8"
+  },
+  "Windsor": {
+   "label": "Ford Windsor small-block V8 (302/351)",
+   "family": "Ford V8"
+  },
+  "Barra": {
+   "label": "Ford Barra 4.0L turbo I6",
+   "family": ""
+  },
+  "Hemi": {
+   "label": "Chrysler Hemi V8 (5.7/6.1/6.4/6.2 SC)",
+   "family": "Mopar"
+  },
+  "SBC": {
+   "label": "Chevrolet small-block V8 (Gen I/II)",
+   "family": ""
+  },
+  "B230": {
+   "label": "Volvo B230 2.3L I4",
+   "family": ""
+  },
+  "K24": {
+   "label": "Honda K20/K24 I4",
+   "family": ""
+  }
+ }
+}
