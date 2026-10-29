@@ -15,7 +15,7 @@ $excludes = "QtWebEngineCore","QtWebEngineWidgets","QtWebEngineQuick","QtQml","Q
 $exArgs = $excludes | ForEach-Object { "--exclude-module"; "PySide6.$_" }
 
 py -3 -m PyInstaller --noconfirm --clean --onefile --windowed --name "StukeZ Designworks Studio" `
-    --icon "assets\icon.ico" --collect-submodules markdown --add-data "starter;starter" --add-data "legal;legal" `
+    --icon "assets\icon.ico" --collect-submodules markdown --add-data "starter;starter" --add-data "legal;legal" --add-data "stukez_studio\builtin;stukez_studio\builtin" `
     --hidden-import argparse --hidden-import dataclasses --hidden-import datetime --hidden-import shutil --hidden-import collections `
     @exArgs run_studio.py
 Check "PyInstaller"

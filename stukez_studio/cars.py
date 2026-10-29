@@ -187,6 +187,12 @@ class Car:
     def view_path(self, view):
         return self.folder / self.data["views"][view]["file"]
 
+    def mask_path(self, view):
+        """A grey image the size of the view where it is white on the paint: only the paint is coloured, the rest keeps its colours."""
+        f = self.data["views"][view].get("mask")
+        p = self.folder / f if f else None
+        return p if p is not None and p.exists() else None
+
     def view_info(self, view):
         return self.data["views"][view]
 
@@ -202,6 +208,17 @@ class Car:
 
     def front_of(self, view):
         return {"side": self.front_side, "top": self.front_top}.get(view, "")
+
+
+BUILTIN_DIR = Path(__file__).resolve().parent / "builtin"
+
+
+def builtin_car():
+    """The car that ships with the program (the default preview car), or None if its files are missing."""
+    f = BUILTIN_DIR / "s13-silvia" / "car.json"
+    if not f.exists():
+        return None
+    return Car(f.parent, json.loads(f.read_text(encoding="utf-8")))
 
 
 class CarLibrary:

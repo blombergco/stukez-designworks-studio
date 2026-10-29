@@ -282,9 +282,10 @@ class ChipGrid(QWidget):
 
 
 class LiveryPreview(QWidget):
-    def __init__(self, min_h=230):
+    def __init__(self, min_h=230, plates=True):
         super().__init__()
         self.pal = None
+        self.plates = plates      # the sponsor plates on the car; the Projects page shows the bare car
         self.setMinimumHeight(min_h)
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
@@ -298,7 +299,7 @@ class LiveryPreview(QWidget):
         r = QRectF(self.rect()).adjusted(1, 1, -1, -1)
         render.draw_stage(p, r, cut=22)
         if self.pal is not None:
-            render.draw_car(p, r.adjusted(18, 14, -18, -8), self.pal)
+            render.draw_car(p, r.adjusted(18, 14, -18, -8), self.pal, plates=self.plates)
 
 
 def run_build(parent, vault, pid, only_missing=True):

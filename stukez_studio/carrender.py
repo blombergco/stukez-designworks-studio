@@ -36,8 +36,13 @@ def _prep(car, view, width):
     if key not in _prep_cache:
         src = _pil(car, view)
         h = max(1, round(src.height * width / src.width))
-        alpha, shade, glass = _shade(np.asarray(src.resize((width, h), Image.LANCZOS)), car.clean, car.glass)
-        _prep_cache[key] = (h, alpha, shade, glass)
+        arr = np.asarray(src.resize((width, h), Image.LANCZOS))
+        mask = car.mask_path(view)
+        if mask is not None:
+            alpha, shade, glass, paint, base = _shade_masked(arr, mask, width, h)
+        else:
+            (alpha, shade, glass), paint, base = _shade(arr, car.clean, car.glass), None, None
+        _prep_cache[key] = (h, alpha, shade, glass, paint, base)
         if len(_prep_cache) > 60:
             _prep_cache.popitem(last=False)
     return _prep_cache[key]
@@ -123,6 +128,17 @@ def _shade(arr, clean, glass_on=True):
     return alpha, shade, _open(white, max(3, int(w / 120) | 1))
 
 
+def _shade_masked(arr, mask_file, w, h):
+    """A car with a paint mask (the built-in illustration): (alpha, shade of the paint, no glass, paint 0..1, the car's own colours)."""
+    alpha = arr[..., 3].astype(np.float32) / 255
+    paint = np.asarray(Image.open(mask_file).convert("L").resize((w, h), Image.LANCZOS), np.float32) / 255
+    rgb = arr[..., :3].astype(np.float32)
+    lum = rgb @ np.array([.299, .587, .114], np.float32)
+    body = paint > .5
+    ref = float(np.median(lum[body])) if body.any() else 128.0
+    return alpha, np.clip(lum / max(ref, 1.0), .35, 1.55), np.zeros((h, w), bool), paint, rgb
+
+
 def _flat(w, h, car, view, d, plates, plate_scale=1.0):
     """The livery drawn flat at the size of the view, as an RGBA numpy array."""
     img = QImage(w, h, QImage.Format_RGBA8888)
@@ -178,9 +194,11 @@ def render(car, view, d, width, plates=None, plate_scale=1.0):
     if key in _cache:
         _cache.move_to_end(key)
         return _cache[key]
-    h, alpha, shade, glass = _prep(car, view, width)
+    h, alpha, shade, glass, paint, base = _prep(car, view, width)
     flat = _flat(width, h, car, view, d, plates, plate_scale)[..., :3].astype(np.float32)
     rgb = np.clip(flat * shade[..., None], 0, 255)
+    if paint is not None:    # only the paint takes the livery; windows, wheels and lights keep their own colours
+        rgb = base * (1 - paint[..., None]) + rgb * paint[..., None]
     rgb[glass] = GLASS
     out = np.dstack([rgb, alpha * 255]).astype(np.uint8)
     qi = QImage(out.data, width, h, width * 4, QImage.Format_RGBA8888).copy()

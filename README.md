@@ -62,6 +62,7 @@ stukez_studio/gradients.py       gradient suggestions, favourites file, .ase exp
 stukez_studio/outlines.py       logo outline engine (numpy and Pillow, no Qt)
 stukez_studio/backup.py         back up the vault: commit and push to GitHub
 stukez_studio/export.py         project package (ZIP)
+stukez_studio/builtin/s13-silvia/  the built-in preview car (picture, paint mask, zones); made with make_default_car.py from an illustration
 stukez_studio/page_*.py         the pages (Workshop has two tabs: gradients, logo outlines)
 stukez_studio/main.py           main window, vault lookup
 ```

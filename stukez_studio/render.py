@@ -141,7 +141,7 @@ def set_preview_car(car):
     PREVIEW_CAR = car
 
 
-def draw_real_car(p, rect, d, car, view="side"):
+def draw_real_car(p, rect, d, car, view="side", plates=True):
     """The palette on a real car capture, fitted into rect; returns False when the car lacks that view."""
     dpr = p.device().devicePixelRatioF() if p.device() else 1.0
     src = car.view_info(view)["size"] if view in car.views() else None
@@ -149,7 +149,7 @@ def draw_real_car(p, rect, d, car, view="side"):
         return False
     ar = src[0] / src[1]
     w, h = min(rect.width(), rect.height() * ar), min(rect.height(), rect.width() / ar)
-    img = carrender.render(car, view, pal_of(d), int(w * dpr), plate_scale=PLATE_SCALE)
+    img = carrender.render(car, view, pal_of(d), int(w * dpr), plates=None if plates else {}, plate_scale=PLATE_SCALE)
     target = QRectF(rect.center().x() - w / 2, rect.center().y() - h / 2, w, h)
     p.save()
     p.setRenderHint(QPainter.SmoothPixmapTransform)
@@ -161,9 +161,9 @@ def draw_real_car(p, rect, d, car, view="side"):
     return True
 
 
-def draw_car(p, rect, d, view="side"):
+def draw_car(p, rect, d, view="side", plates=True):
     """Side view of a drift coupe in the palette's livery (the preview car if one is chosen). rect is the target area."""
-    if PREVIEW_CAR is not None and draw_real_car(p, rect, d, PREVIEW_CAR, view):
+    if PREVIEW_CAR is not None and draw_real_car(p, rect, d, PREVIEW_CAR, view, plates):
         return
     d = pal_of(d)
     p.save()
@@ -189,7 +189,7 @@ def draw_car(p, rect, d, view="side"):
     f.setPixelSize(17)
     f.setBold(True)
     p.setFont(f)
-    for rx, ry, w, h, fill, line, tag in (() if getattr(d, "no_plates", False) else
+    for rx, ry, w, h, fill, line, tag in (() if (not plates or getattr(d, "no_plates", False)) else
                                           ((314, 182, 188, 42, d.sponsor_a, d.sponsor_a_outline, "SPONSOR A"),
                                            (514, 182, 188, 42, d.sponsor_b, d.sponsor_b_outline, "SPONSOR B"))):
         r = QRectF(rx, ry, w, h)
@@ -256,7 +256,7 @@ def draw_plate(p, rect, text):
     p.restore()
 
 
-def draw_card(p, rect, d, title, subtitle, selected=False, hover=False, number=None):
+def draw_card(p, rect, d, title, subtitle, selected=False, hover=False, number=None, plates=True):
     """Grid tile: the car on its stage with the project number, then the name, the moods and four colour tiles."""
     d = pal_of(d)
     p.save()
@@ -267,7 +267,7 @@ def draw_card(p, rect, d, title, subtitle, selected=False, hover=False, number=N
     p.fillRect(rect, QColor("#1b0f13") if hover or selected else PANEL)
     top = QRectF(rect.x(), rect.y(), rect.width(), rect.height() * .60)
     _stage_fill(p, top)
-    draw_car(p, top.adjusted(10, 12, -10, -4), d)
+    draw_car(p, top.adjusted(10, 12, -10, -4), d, plates=plates)
     p.setPen(INK)
     p.setFont(head_font(19))
     p.drawText(QRectF(rect.x() + 14, top.bottom() + 2, rect.width() - 28, 24), Qt.AlignLeft | Qt.AlignVCenter,
@@ -291,7 +291,7 @@ def draw_card(p, rect, d, title, subtitle, selected=False, hover=False, number=N
     p.restore()
 
 
-def render_card_image(d, title, subtitle="", concept="", width=1600):
+def render_card_image(d, title, subtitle="", concept="", width=1600, plates=True):
     """A shareable palette sheet: livery, then every colour with its hex code."""
     d = pal_of(d)
     slots = [("Base", d.base), ("Tribals", d.tribal), ("Tribal outline", d.tribal_outline),
@@ -321,7 +321,7 @@ def render_card_image(d, title, subtitle="", concept="", width=1600):
     p.drawText(QRectF(width * .6, m * .5, width * .36, width * .04), Qt.AlignRight | Qt.AlignVCenter, "StukeZ Designworks")
     stage = QRectF(m, width * .15, width - 2 * m, h * .42)
     draw_stage(p, stage, cut=width * .02)
-    draw_car(p, stage.adjusted(20, 14, -20, -10), d)
+    draw_car(p, stage.adjusted(20, 14, -20, -10), d, plates=plates)
     gap = width * .012
     cw = (width - 2 * m - gap * 6) / 7
     y = stage.bottom() + width * .03

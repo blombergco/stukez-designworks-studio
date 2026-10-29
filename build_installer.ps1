@@ -26,7 +26,7 @@ $exArgs = $excludes | ForEach-Object { "--exclude-module"; "PySide6.$_" }
 # a folder (not one big file): starts faster, triggers fewer virus scanners, and keeps the Qt libraries replaceable (LGPL)
 py -3 -m PyInstaller --noconfirm --clean --onedir --windowed --name "StukeZ Designworks Studio" `
     --icon "assets\icon.ico" --collect-submodules markdown `
-    --add-data "starter;starter" --add-data "legal;legal" `
+    --add-data "starter;starter" --add-data "legal;legal" --add-data "stukez_studio\builtin;stukez_studio\builtin" `
     --hidden-import argparse --hidden-import dataclasses --hidden-import datetime --hidden-import shutil --hidden-import collections `
     --hidden-import unicodedata --hidden-import zipfile --hidden-import csv `
     @exArgs run_studio.py

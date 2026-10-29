@@ -9,6 +9,7 @@ from PySide6.QtWidgets import (QApplication, QButtonGroup, QComboBox, QDialog, Q
 
 from . import __version__, carrender, render
 from .backend import Vault, find_vault, looks_like_vault
+from .cars import builtin_car
 from .page_cars import CarsPage
 from .page_generator import GeneratorPage
 from .page_guides import GuidesPage
@@ -194,10 +195,16 @@ class MainWindow(QMainWindow):
         want = keep if keep is not None else self.settings.value("previewCar", "")
         self.car_box.blockSignals(True)
         self.car_box.clear()
+        builtin = builtin_car()
+        if builtin is not None:
+            self.car_box.addItem(builtin.name, builtin)
         self.car_box.addItem("Generic coupe", None)
         for c in self.vault.cars().cars():
             self.car_box.addItem(c.name, c)
-        i = next((n for n in range(self.car_box.count()) if getattr(self.car_box.itemData(n), "id", None) == want), 0)
+        if want == "generic":
+            i = self.car_box.findText("Generic coupe")
+        else:    # the saved car if it still exists, otherwise the first entry (the built-in car)
+            i = next((n for n in range(self.car_box.count()) if getattr(self.car_box.itemData(n), "id", None) == want), 0)
         self.car_box.setCurrentIndex(i)
         self.car_box.blockSignals(False)
         render.set_preview_car(self.car_box.currentData())
@@ -205,7 +212,7 @@ class MainWindow(QMainWindow):
     def _car_picked(self, _i):
         car = self.car_box.currentData()
         render.set_preview_car(car)
-        self.settings.setValue("previewCar", car.id if car else "")
+        self.settings.setValue("previewCar", car.id if car else "generic")
         self._repaint_previews()
 
     def _repaint_previews(self):
@@ -215,9 +222,9 @@ class MainWindow(QMainWindow):
         self.projects.refresh_on_car()
 
     def cars_changed(self):
-        keep = getattr(self.car_box.currentData(), "id", None)
+        cur = self.car_box.currentData()
         carrender.clear_cache()
-        self._restore_car(keep or "")
+        self._restore_car(cur.id if cur else "generic")
         self._repaint_previews()
 
     def open_prompt(self, item, project):

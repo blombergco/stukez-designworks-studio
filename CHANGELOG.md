@@ -4,6 +4,11 @@ All notable changes to StukeZ Designworks Studio. Versions follow `major.minor.p
 adds something, a major changes how your data is stored. The newest release is the top entry; the text under it is what
 the update dialog shows.
 
+## 1.2.0
+
+- A built-in car, an S13 Silvia, is now the default preview car instead of the plain coupe. Only its paint takes the palette; windows, wheels and lights keep their own colours. The Preview car box still lists the plain coupe and your own cars.
+- Projects shows the bare car: the sponsor plates are gone from the project cards, the detail picture and the exported palette card. New project still shows small plates, because that is where the sponsor colours are chosen.
+
 ## 1.1.1
 
 - The sponsor plates in the previews (project cards, project detail, New project) are much smaller, so the car and its colours show. The Illustrator export keeps the full-size zones.

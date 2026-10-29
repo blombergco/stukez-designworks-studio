@@ -144,7 +144,7 @@ class CardDelegate(QStyledItemDelegate):
         p = index.data(Qt.UserRole)
         rect = QRectF(option.rect).adjusted(6, 6, -6, -6)
         sub = (", ".join(p.moods[:3]) or "no moods") + (f"  ·  {p.platform}" if p.platform else "")
-        render.draw_card(painter, rect, p, p.name, sub, selected=bool(option.state & QStyle.State_Selected), number=f"{p.id:03d}",
+        render.draw_card(painter, rect, p, p.name, sub, selected=bool(option.state & QStyle.State_Selected), number=f"{p.id:03d}", plates=False,
                          hover=bool(option.state & QStyle.State_MouseOver))
 
 
@@ -197,7 +197,7 @@ class ProjectsPage(QWidget):
         self.title = label("", "h1")
         self.badges = QHBoxLayout()
         self.concept = label("", "muted", wrap=True)
-        self.livery = LiveryPreview(210)
+        self.livery = LiveryPreview(210, plates=False)
         self.chips = ChipGrid()
         self.chips.copied.connect(lambda n: self.status.emit(f"Copied {n}"))
         actions = QHBoxLayout()
@@ -366,7 +366,7 @@ class ProjectsPage(QWidget):
             return
         path, _ = QFileDialog.getSaveFileName(self, "Save palette card", f"{p.title} - Palette card.png", "PNG image (*.png)")
         if path:
-            render.render_card_image(p, p.title, "", p.concept).save(path)
+            render.render_card_image(p, p.title, "", p.concept, plates=False).save(path)
             self.status.emit(f"Saved {os.path.basename(path)}")
 
     def export_package(self):
@@ -378,7 +378,7 @@ class ProjectsPage(QWidget):
             return
         with tempfile.TemporaryDirectory() as tmp:
             card = os.path.join(tmp, f"{p.title} - Palette card.png")
-            render.render_card_image(p, p.title, "", p.concept).save(card)
+            render.render_card_image(p, p.title, "", p.concept, plates=False).save(card)
             n = export.write_zip(self.vault, p, path, extra=[(card, f"{p.title}/{p.title} - Palette card.png")])
         self.status.emit(f"Saved {os.path.basename(path)} with {n} files")
 
