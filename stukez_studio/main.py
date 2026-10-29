@@ -198,13 +198,10 @@ class MainWindow(QMainWindow):
         builtin = builtin_car()
         if builtin is not None:
             self.car_box.addItem(builtin.name, builtin)
-        self.car_box.addItem("Generic coupe", None)
         for c in self.vault.cars().cars():
             self.car_box.addItem(c.name, c)
-        if want == "generic":
-            i = self.car_box.findText("Generic coupe")
-        else:    # the saved car if it still exists, otherwise the first entry (the built-in car)
-            i = next((n for n in range(self.car_box.count()) if getattr(self.car_box.itemData(n), "id", None) == want), 0)
+        # the saved car if it still exists, otherwise the first entry (the built-in car)
+        i = next((n for n in range(self.car_box.count()) if getattr(self.car_box.itemData(n), "id", None) == want), 0)
         self.car_box.setCurrentIndex(i)
         self.car_box.blockSignals(False)
         render.set_preview_car(self.car_box.currentData())
@@ -212,7 +209,7 @@ class MainWindow(QMainWindow):
     def _car_picked(self, _i):
         car = self.car_box.currentData()
         render.set_preview_car(car)
-        self.settings.setValue("previewCar", car.id if car else "generic")
+        self.settings.setValue("previewCar", car.id if car else "")
         self._repaint_previews()
 
     def _repaint_previews(self):
@@ -224,7 +221,7 @@ class MainWindow(QMainWindow):
     def cars_changed(self):
         cur = self.car_box.currentData()
         carrender.clear_cache()
-        self._restore_car(cur.id if cur else "generic")
+        self._restore_car(cur.id if cur else "")
         self._repaint_previews()
 
     def open_prompt(self, item, project):

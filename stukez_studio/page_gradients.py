@@ -87,7 +87,7 @@ class Tile(QWidget):
 
 
 class CarStage(QWidget):
-    """The gradient on the car (or the generic coupe), on the garage floor."""
+    """The gradient on the preview car, on the garage floor."""
 
     def __init__(self):
         super().__init__()

@@ -4,6 +4,10 @@ All notable changes to StukeZ Designworks Studio. Versions follow `major.minor.p
 adds something, a major changes how your data is stored. The newest release is the top entry; the text under it is what
 the update dialog shows.
 
+## 1.2.1
+
+- The plain coupe is gone: the Preview car box lists the built-in S13 Silvia and your own cars.
+
 ## 1.2.0
 
 - A built-in car, an S13 Silvia, is now the default preview car instead of the plain coupe. Only its paint takes the palette; windows, wheels and lights keep their own colours. The Preview car box still lists the plain coupe and your own cars.

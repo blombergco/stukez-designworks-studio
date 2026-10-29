@@ -1,9 +1,8 @@
 """Painting helpers: palette cards for the grid, the livery car preview and PNG export."""
-from math import cos, pi, sin
 from types import SimpleNamespace
 
 from PySide6.QtCore import QPointF, QRectF, Qt
-from PySide6.QtGui import (QBrush, QColor, QFont, QImage, QLinearGradient, QPainter, QPainterPath, QPen,
+from PySide6.QtGui import (QBrush, QColor, QImage, QLinearGradient, QPainter, QPainterPath, QPen,
                            QRadialGradient)
 
 from . import carrender
@@ -102,38 +101,8 @@ def first(v):
 
 
 # ---------------------------------------------------------------------- the car
-def _body():
-    p = QPainterPath()
-    p.moveTo(40, 250)
-    p.lineTo(35, 200)
-    p.cubicTo(35, 185, 45, 178, 80, 174)
-    p.lineTo(230, 166)
-    p.cubicTo(270, 160, 300, 130, 345, 100)
-    p.cubicTo(380, 80, 440, 74, 520, 74)
-    p.cubicTo(600, 74, 670, 95, 735, 150)
-    p.lineTo(900, 178)
-    p.cubicTo(950, 184, 975, 200, 978, 225)
-    p.lineTo(972, 250)
-    p.closeSubpath()
-    for cx in (230, 790):
-        arch = QPainterPath()
-        arch.addEllipse(QPointF(cx, 250), 68, 68)
-        p = p.subtracted(arch)
-    return p
-
-
-def _glass():
-    g = QPainterPath()
-    g.moveTo(352, 160)
-    g.lineTo(385, 110)
-    g.cubicTo(420, 93, 470, 88, 520, 88)
-    g.cubicTo(580, 88, 640, 105, 705, 156)
-    g.closeSubpath()
-    return g
-
-
 PLATE_SCALE = 0.4     # how big the sponsor plates are in previews, against their zone: small, so the car and its colours show
-PREVIEW_CAR = None   # the car from the Car Templates library used for previews (None = the generic coupe)
+PREVIEW_CAR = None   # the car used for previews: the built-in car, or one from the Car Templates library
 
 
 def set_preview_car(car):
@@ -162,68 +131,9 @@ def draw_real_car(p, rect, d, car, view="side", plates=True):
 
 
 def draw_car(p, rect, d, view="side", plates=True):
-    """Side view of a drift coupe in the palette's livery (the preview car if one is chosen). rect is the target area."""
-    if PREVIEW_CAR is not None and draw_real_car(p, rect, d, PREVIEW_CAR, view, plates):
-        return
-    d = pal_of(d)
-    p.save()
-    p.setRenderHint(QPainter.Antialiasing)
-    W, H = 1010, 330
-    s = min(rect.width() / W, rect.height() / H)
-    p.translate(rect.center().x() - W * s / 2, rect.center().y() - H * s / 2)
-    p.scale(s, s)
-    body = _body()
-    box = body.boundingRect()
-    p.setPen(Qt.NoPen)
-    p.setBrush(QColor(0, 0, 0, 70))
-    p.drawEllipse(QRectF(60, 292, 900, 34))
-    # body: base behind the middle of the door, tribal colour in front of it, one 45 degree gradient over half the car
-    split = carrender.split_gradient(box, d, box.width(), 1, 1)
-    p.setBrush(split)
-    p.setPen(QPen(QColor(0, 0, 0, 120), 2))
-    p.drawPath(body)
-    p.save()
-    p.setClipPath(body)
-    # sponsor plates
-    f = QFont("Segoe UI", 1)
-    f.setPixelSize(17)
-    f.setBold(True)
-    p.setFont(f)
-    for rx, ry, w, h, fill, line, tag in (() if (not plates or getattr(d, "no_plates", False)) else
-                                          ((314, 182, 188, 42, d.sponsor_a, d.sponsor_a_outline, "SPONSOR A"),
-                                           (514, 182, 188, 42, d.sponsor_b, d.sponsor_b_outline, "SPONSOR B"))):
-        r = QRectF(rx, ry, w, h)
-        p.setBrush(brush(r, fill))
-        p.setPen(QPen(QColor(line), 3.5))
-        p.drawRoundedRect(r, 8, 8)
-        p.setPen(QColor(line))
-        p.drawText(r, Qt.AlignCenter, tag)
-    p.restore()
-    # glass, B pillar, lights
-    p.setPen(Qt.NoPen)
-    p.setBrush(QColor(14, 13, 22, 225))
-    p.drawPath(_glass())
-    p.setPen(QPen(QBrush(split), 9))
-    p.drawLine(520, 88, 520, 160)
-    p.setPen(Qt.NoPen)
-    p.setBrush(QColor("#e9e7f0"))
-    p.drawRoundedRect(QRectF(935, 198, 38, 14), 5, 5)
-    p.setBrush(QColor("#6d6a78"))
-    p.drawRoundedRect(QRectF(36, 190, 26, 12), 4, 4)
-    # wheels
-    for cx in (230, 790):
-        p.setBrush(QColor("#0c0b12"))
-        p.drawEllipse(QPointF(cx, 250), 58, 58)
-        p.setBrush(QColor("#9a97aa"))
-        p.drawEllipse(QPointF(cx, 250), 34, 34)
-        p.setBrush(QColor("#2a2836"))
-        p.drawEllipse(QPointF(cx, 250), 13, 13)
-        p.setPen(QPen(QColor("#2a2836"), 5))
-        for k in range(5):
-            a = 2 * pi * k / 5 + .3
-            p.drawLine(QPointF(cx + 13 * cos(a), 250 + 13 * sin(a)), QPointF(cx + 33 * cos(a), 250 + 33 * sin(a)))
-        p.setPen(Qt.NoPen)
-    p.restore()
+    """The palette on the preview car (the built-in car unless another one is chosen), fitted into rect."""
+    if PREVIEW_CAR is not None:
+        draw_real_car(p, rect, d, PREVIEW_CAR, view, plates)
 
 
 # ---------------------------------------------------------------------- cards

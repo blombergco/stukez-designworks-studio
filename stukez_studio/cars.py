@@ -24,7 +24,7 @@ ZONE_NAMES = {1: "Windshield banner", 2: "Hood", 3: "Front bumper / lip", 4: "Fr
 
 
 # ---------------------------------------------------------------------- default zones
-# centre-from-front, centre-from-top, width, height as fractions of the side silhouette (taken from the generic car
+# centre-from-front, centre-from-top, width, height as fractions of the side silhouette (taken from the car
 # of the Placement preview, front on the right there)
 _SIDE = {2: (.151, .513, .117, .124), 3: (.038, .85, .063, .124), 4: (.18, .611, .105, .124), 5: (.519, .628, .23, .212),
          6: (.519, .885, .272, .106), 7: (.759, .602, .126, .177), 10: (.962, .867, .059, .106)}
