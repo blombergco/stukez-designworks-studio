@@ -132,6 +132,7 @@ def _glass():
     return g
 
 
+PLATE_SCALE = 0.4     # how big the sponsor plates are in previews, against their zone: small, so the car and its colours show
 PREVIEW_CAR = None   # the car from the Car Templates library used for previews (None = the generic coupe)
 
 
@@ -148,7 +149,7 @@ def draw_real_car(p, rect, d, car, view="side"):
         return False
     ar = src[0] / src[1]
     w, h = min(rect.width(), rect.height() * ar), min(rect.height(), rect.width() / ar)
-    img = carrender.render(car, view, pal_of(d), int(w * dpr))
+    img = carrender.render(car, view, pal_of(d), int(w * dpr), plate_scale=PLATE_SCALE)
     target = QRectF(rect.center().x() - w / 2, rect.center().y() - h / 2, w, h)
     p.save()
     p.setRenderHint(QPainter.SmoothPixmapTransform)

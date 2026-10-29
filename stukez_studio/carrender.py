@@ -123,7 +123,7 @@ def _shade(arr, clean, glass_on=True):
     return alpha, shade, _open(white, max(3, int(w / 120) | 1))
 
 
-def _flat(w, h, car, view, d, plates):
+def _flat(w, h, car, view, d, plates, plate_scale=1.0):
     """The livery drawn flat at the size of the view, as an RGBA numpy array."""
     img = QImage(w, h, QImage.Format_RGBA8888)
     img.fill(Qt.transparent)
@@ -145,22 +145,28 @@ def _flat(w, h, car, view, d, plates):
             continue
         x, y, zw, zh = zones[z]
         r = QRectF(x * w, y * h, zw * w, zh * h)
+        if plate_scale != 1.0:   # a preview shows where a sponsor goes with a small plate, so the paint on the car stays visible
+            centre = r.center()
+            r = QRectF(0, 0, r.width() * plate_scale, r.height() * plate_scale)
+            r.moveCenter(centre)
         fill, line = (d.sponsor_a, d.sponsor_a_outline) if which == "A" else (d.sponsor_b, d.sponsor_b_outline)
         p.setBrush(_brush(r, fill, vertical))
-        p.setPen(QPen(QColor(line), max(2.0, min(r.width(), r.height()) * .08)))
+        p.setPen(QPen(QColor(line), max(1.5, min(r.width(), r.height()) * .08)))
         p.drawRoundedRect(r, r.height() * .22, r.height() * .22)
         f = QFont("Segoe UI")
         f.setBold(True)
-        f.setPixelSize(max(6, int(min(r.height() * .5, r.width() * .16))))
-        p.setFont(f)
-        p.setPen(QColor(line))
-        p.drawText(r, Qt.AlignCenter, f"SPONSOR {which}")
+        size = int(min(r.height() * .5, r.width() * .16))
+        if size >= 8 or plate_scale == 1.0:      # a label too small to read is left out
+            f.setPixelSize(max(6, size))
+            p.setFont(f)
+            p.setPen(QColor(line))
+            p.drawText(r, Qt.AlignCenter, f"SPONSOR {which}")
     p.end()
     ptr = img.constBits()
     return np.frombuffer(ptr, np.uint8).reshape(h, img.bytesPerLine() // 4, 4)[:, :w].copy()
 
 
-def render(car, view, d, width, plates=None):
+def render(car, view, d, width, plates=None, plate_scale=1.0):
     """The car view in the palette `d` (Proj, pk.Project or dict-like namespace) as a QImage, `width` pixels wide."""
     if view not in car.views():
         return None
@@ -168,12 +174,12 @@ def render(car, view, d, width, plates=None):
     plates = ({} if getattr(d, "no_plates", False) else PREVIEW_PLATES.get(view, {})) if plates is None else plates
     key = (car.id, view, width, car.clean, car.glass, repr((d.base, d.tribal, d.tribal_outline, d.sponsor_a, d.sponsor_a_outline, cut_of(d),
                                                  d.sponsor_b, d.sponsor_b_outline)), repr(sorted(plates.items())),
-           repr(car.zones(view)), car.front_side, car.front_top)
+           repr(car.zones(view)), car.front_side, car.front_top, plate_scale)
     if key in _cache:
         _cache.move_to_end(key)
         return _cache[key]
     h, alpha, shade, glass = _prep(car, view, width)
-    flat = _flat(width, h, car, view, d, plates)[..., :3].astype(np.float32)
+    flat = _flat(width, h, car, view, d, plates, plate_scale)[..., :3].astype(np.float32)
     rgb = np.clip(flat * shade[..., None], 0, 255)
     rgb[glass] = GLASS
     out = np.dstack([rgb, alpha * 255]).astype(np.uint8)

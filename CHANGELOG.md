@@ -4,6 +4,10 @@ All notable changes to StukeZ Designworks Studio. Versions follow `major.minor.p
 adds something, a major changes how your data is stored. The newest release is the top entry; the text under it is what
 the update dialog shows.
 
+## 1.1.1
+
+- The sponsor plates in the previews (project cards, project detail, New project) are much smaller, so the car and its colours show. The Illustrator export keeps the full-size zones.
+
 ## 1.1.0
 
 - New name and look: DIN type, every button, card and colour tile cut at 45 degrees, a new navigation rail and a garage-floor stage behind the cars.
