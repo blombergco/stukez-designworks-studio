@@ -2,6 +2,8 @@
 
 A Windows design studio for drift liveries: generate and edit colour palettes, see them on your own cars, build gradients and logo outlines, keep a sponsor database, and export everything for Illustrator and Substance Painter. Everything you make is stored as plain Markdown notes in a folder you own (a *workspace*, which also opens in Obsidian).
 
+**Beta:** the program is still being tested. Things can change or break between versions, so keep a backup of your workspace and tell the author about anything that looks wrong.
+
 **Download:** the newest `...-Setup.exe` on the [Releases](../../releases) page. It installs for your user, no administrator rights needed, and updates itself from here.
 
 The rest of this page is for people who work on the program, or keep their own vault.

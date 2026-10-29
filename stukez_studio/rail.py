@@ -3,11 +3,12 @@ from PySide6.QtCore import QPointF, QRectF, Qt
 from PySide6.QtGui import QColor, QLinearGradient, QPainter, QPainterPath, QPen, QPolygonF
 from PySide6.QtWidgets import QToolButton, QWidget
 
+from . import __channel__
 from .render import chamfer_path
 from .theme import BG_DEEP, BORDER, EMBER, INK, MUTED, RED, body_font, head_font
 
 RAIL_W = 96
-LOGO_H = 118
+LOGO_H = 132
 
 
 def _poly(*pts):
@@ -159,4 +160,12 @@ class Rail(QWidget):
         p.setFont(body_font(11))
         p.setPen(QColor(MUTED))
         p.drawText(QRectF(0, 90, w - 2, 16), Qt.AlignHCenter | Qt.AlignVCenter, "Designworks")
+        if __channel__:
+            tag = QRectF(cx - 17, 110, 36, 15)
+            p.setPen(Qt.NoPen)
+            p.setBrush(QColor(RED))
+            p.drawPath(chamfer_path(tag, 5))
+            p.setFont(head_font(13))
+            p.setPen(QColor("#ffffff"))
+            p.drawText(tag, Qt.AlignCenter, __channel__)
         p.end()

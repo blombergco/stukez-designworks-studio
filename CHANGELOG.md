@@ -4,6 +4,10 @@ All notable changes to StukeZ Designworks Studio. Versions follow `major.minor.p
 adds something, a major changes how your data is stored. The newest release is the top entry; the text under it is what
 the update dialog shows.
 
+## 1.2.2
+
+- The program is marked as beta while it is being tested: a "beta" tag in the sidebar, "(beta)" in the window title, the version shown as "x.y.z beta" in About and the update dialogs, and "beta" in the installer's name (for example `StukeZ-Designworks-Studio-1.2.2-beta-Setup.exe`). Updates from earlier versions work as before.
+
 ## 1.2.1
 
 - The plain coupe is gone: the Preview car box lists the built-in S13 Silvia and your own cars.

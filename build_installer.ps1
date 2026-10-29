@@ -11,6 +11,8 @@ if (-not (Test-Path "starter\VERSION")) { throw "starter\ is missing: run with -
 if (-not (Test-Path "legal\THIRD_PARTY_NOTICES.txt")) { throw "legal\ is missing: run with -RefreshStarter" }
 
 $version = (py -3 -c "from stukez_studio import __version__; print(__version__)").Trim(); Check "version"
+$channel = (py -3 -c "from stukez_studio import __channel__; print(__channel__)").Trim(); Check "channel"
+$suffix = if ($channel) { "-$channel" } else { "" }    # the installer's name carries the channel, e.g. ...-1.2.2-beta-Setup.exe
 $starter = (Get-Content "starter\VERSION" -Raw).Trim()
 if ($starter -ne $version) { throw "starter\ is for version $starter but the program is ${version}. Run with -RefreshStarter" }
 
@@ -35,9 +37,9 @@ Check "PyInstaller"
 $iscc = @("$env:LOCALAPPDATA\Programs\Inno Setup 6\ISCC.exe", "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe", "$env:ProgramFiles\Inno Setup 6\ISCC.exe") |
         Where-Object { Test-Path $_ } | Select-Object -First 1
 if (-not $iscc) { throw "Inno Setup 6 is not installed (winget install JRSoftware.InnoSetup)" }
-& $iscc "/DAppVersion=$version" installer.iss; Check "Inno Setup"
+& $iscc "/DAppVersion=$version" "/DChannel=$suffix" installer.iss; Check "Inno Setup"
 
-$setup = "dist\installer\StukeZ-Designworks-Studio-$version-Setup.exe"
+$setup = "dist\installer\StukeZ-Designworks-Studio-$version$suffix-Setup.exe"
 $hash = (Get-FileHash $setup -Algorithm SHA256).Hash.ToLower()
 "$hash  $(Split-Path $setup -Leaf)" | Out-File -FilePath "$setup.sha256" -Encoding ascii -NoNewline
 Write-Host "Done: $PSScriptRoot\$setup"

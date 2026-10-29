@@ -7,7 +7,7 @@ from PySide6.QtGui import QAction, QColor, QIcon, QKeySequence, QLinearGradient,
 from PySide6.QtWidgets import (QApplication, QButtonGroup, QComboBox, QDialog, QFileDialog, QHBoxLayout, QLabel, QMainWindow,
                                QMessageBox, QStackedWidget, QVBoxLayout, QWidget)
 
-from . import __version__, carrender, render
+from . import __channel__, __version_label__, __version__, carrender, render
 from .backend import Vault, find_vault, looks_like_vault
 from .cars import builtin_car
 from .page_cars import CarsPage
@@ -52,7 +52,7 @@ class MainWindow(QMainWindow):
     def __init__(self, vault, settings):
         super().__init__()
         self.vault, self.settings = vault, settings
-        self.setWindowTitle(f"StukeZ Designworks Studio  ·  {vault.root.name}")
+        self.setWindowTitle(f"StukeZ Designworks Studio{' (' + __channel__ + ')' if __channel__ else ''}  ·  {vault.root.name}")
         self.setWindowIcon(app_icon())
         self.resize(1680, 980)
 
@@ -134,8 +134,10 @@ class MainWindow(QMainWindow):
         h = self.menuBar().addMenu("&Help")
         a = QAction("About StukeZ Designworks Studio", self)
         a.triggered.connect(lambda: QMessageBox.about(
-            self, "StukeZ Designworks Studio", f"<b>StukeZ Designworks Studio {__version__}</b><br>Design studio for drift liveries: palettes, cars, gradients and sponsor kits.<br><br>"
-            f"Workspace: {self.vault.root}<br>Your notes in this folder are the source of truth; the program writes new projects as plain notes."))
+            self, "StukeZ Designworks Studio", f"<b>StukeZ Designworks Studio {__version_label__}</b><br>Design studio for drift liveries: palettes, cars, gradients and sponsor kits.<br><br>"
+            f"Workspace: {self.vault.root}<br>Your notes in this folder are the source of truth; the program writes new projects as plain notes."
+            + ("<br><br>This is a beta version: it is still being tested, so tell the author about anything that looks wrong. "
+               "Keep a backup of your workspace." if __channel__ else "")))
         h.addAction(a)
         upd = QAction("Check for updates…", self)
         upd.triggered.connect(lambda: self.updater.check(manual=True))

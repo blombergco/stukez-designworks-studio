@@ -5,7 +5,7 @@ from PySide6.QtCore import QObject, QThread, QUrl, Signal
 from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import QApplication, QMessageBox, QProgressDialog
 
-from . import __version__, updates
+from . import __channel__, __version_label__, updates
 
 
 class CheckWorker(QThread):
@@ -57,7 +57,7 @@ class UpdateController(QObject):
             return
         if not updates.is_newer(info["version"]):
             if manual:
-                QMessageBox.information(self.window, "Check for updates", f"You have the latest version ({__version__}).")
+                QMessageBox.information(self.window, "Check for updates", f"You have the latest version ({__version_label__}).")
             return
         self.available.emit(info)
         if manual:
@@ -65,7 +65,7 @@ class UpdateController(QObject):
 
     def offer(self, info):
         notes = info["notes"][:900] + ("…" if len(info["notes"]) > 900 else "")
-        text = f"Version {info['version']} is available (you have {__version__}).\n\n" + (f"What's new:\n{notes}\n\n" if notes else "")
+        text = f"Version {info['version']}{' ' + __channel__ if __channel__ else ''} is available (you have {__version_label__}).\n\n" + (f"What's new:\n{notes}\n\n" if notes else "")
         if not updates.can_self_update():
             if QMessageBox.question(self.window, "Update available", text + "This copy runs from source, so it does not update itself. Open the release page?") == QMessageBox.Yes:
                 QDesktopServices.openUrl(QUrl(info["page"]))

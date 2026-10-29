@@ -4,6 +4,9 @@
 #ifndef AppVersion
   #define AppVersion "0.0.0"
 #endif
+#ifndef Channel
+  #define Channel ""
+#endif
 #define AppName "StukeZ Designworks Studio"
 #define AppExe "StukeZ Designworks Studio.exe"
 
@@ -11,12 +14,13 @@
 AppId={{2CE284F2-5A08-4245-9127-C294A5039D13}
 AppName={#AppName}
 AppVersion={#AppVersion}
+AppVerName={#AppName} {#AppVersion}{#Channel}
 AppPublisher=StukeZ Designworks
 DefaultDirName={autopf}\{#AppName}
 DefaultGroupName={#AppName}
 PrivilegesRequired=lowest
 OutputDir=dist\installer
-OutputBaseFilename=StukeZ-Designworks-Studio-{#AppVersion}-Setup
+OutputBaseFilename=StukeZ-Designworks-Studio-{#AppVersion}{#Channel}-Setup
 SetupIconFile=assets\icon.ico
 UninstallDisplayIcon={app}\{#AppExe}
 Compression=lzma2
