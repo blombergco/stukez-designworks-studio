@@ -1,16 +1,16 @@
 """StukeZ Designworks Studio main window and entry point."""
 import os
+import random
 import sys
 
-from PySide6.QtCore import QRectF, QSettings, Qt, QTimer
-from PySide6.QtGui import QAction, QColor, QIcon, QKeySequence, QLinearGradient, QPainter, QPixmap
-from PySide6.QtWidgets import (QApplication, QButtonGroup, QComboBox, QDialog, QFileDialog, QHBoxLayout, QLabel, QMainWindow,
-                               QMessageBox, QStackedWidget, QVBoxLayout, QWidget)
+from PySide6.QtCore import QEasingCurve, QPropertyAnimation, QSettings, Qt, QTimer
+from PySide6.QtGui import QAction, QKeySequence
+from PySide6.QtWidgets import (QApplication, QButtonGroup, QComboBox, QDialog, QFileDialog, QGraphicsOpacityEffect, QHBoxLayout, QLabel, QMainWindow,
+                               QMessageBox, QSplashScreen, QStackedWidget, QVBoxLayout, QWidget)
 
 from . import __channel__, __version_label__, carrender, render
 from .backend import Vault, find_vault, looks_like_vault
 from .cars import builtin_cars
-from . import wheels
 from .page_cars import CarsPage
 from .page_generator import GeneratorPage
 from .page_guides import GuidesPage
@@ -26,6 +26,8 @@ from .update_ui import UpdateController
 from .welcome import LicencesDialog, WelcomeDialog
 from . import updates
 from . import workspace
+from . import logo
+from . import theme as th
 from .theme import build_qss, install_cut_frames
 
 PAGES = [("Projects", "projects"), ("New project", "new"), ("Cars", "cars"), ("Prompts", "prompts"), ("Sponsors", "sponsors"), ("Guides", "guides"),
@@ -33,21 +35,8 @@ PAGES = [("Projects", "projects"), ("New project", "new"), ("Cars", "cars"), ("P
 
 
 def app_icon():
-    pm = QPixmap(256, 256)
-    pm.fill(Qt.transparent)
-    p = QPainter(pm)
-    p.setRenderHint(QPainter.Antialiasing)
-    g = QLinearGradient(0, 0, 256, 256)
-    g.setColorAt(0, QColor("#ff2e3f"))
-    g.setColorAt(1, QColor("#3a0610"))
-    p.setPen(Qt.NoPen)
-    p.setBrush(g)
-    p.drawRoundedRect(QRectF(8, 8, 240, 240), 54, 54)
-    for i, c in enumerate(("#0a0608", "#ff2e3f", "#FFFFFF")):
-        p.setBrush(QColor(c))
-        p.drawRoundedRect(QRectF(46 + i * 62, 70, 52, 116), 16, 16)
-    p.end()
-    return QIcon(pm)
+    """The S and Z mark in the colours of the theme in use (see logo.py)."""
+    return logo.app_icon()
 
 
 class MainWindow(QMainWindow):
@@ -59,19 +48,7 @@ class MainWindow(QMainWindow):
         self.resize(1680, 980)
 
         self.car_box = QComboBox()
-        self.wheel_box, self.wheel_colour = QComboBox(), QComboBox()
-        self.wheel_box.addItem("Wheels: the car's own", "")
-        for key, title in wheels.DESIGNS.items():
-            self.wheel_box.addItem(title, key)
-        self.wheel_box.addItem("No wheels", "none")
-        self.wheel_colour.addItem("Wheel colour: default", "")
-        for key in wheels.COLOURS:
-            self.wheel_colour.addItem(key.capitalize(), key)
-        for box, name in ((self.wheel_box, "wheelDesign"), (self.wheel_colour, "wheelColour")):
-            i = box.findData(self.settings.value(name, ""))
-            box.setCurrentIndex(max(0, i))
-        carrender.WHEEL_CHOICE = (self.wheel_box.currentData(), self.wheel_colour.currentData())
-        carrender.PAINT = self.settings.value("paint", "") if self.settings.value("paint", "") in ("base", "tribal") else ""
+        carrender.PAINT = "base" if self.settings.value("paint", "") == "base" else ""
         self._restore_car()
         self.projects = ProjectsPage(vault)
         self.generator = GeneratorPage(vault)
@@ -87,7 +64,7 @@ class MainWindow(QMainWindow):
             self.stack.addWidget(p)
             p.status.connect(self.flash)
 
-        side = Rail()
+        side = self.rail = Rail()
         sl = QVBoxLayout(side)
         sl.setContentsMargins(0, LOGO_H, 0, 14)
         sl.setSpacing(2)
@@ -117,8 +94,8 @@ class MainWindow(QMainWindow):
         self.guides.openProject.connect(self.open_project)
         self.workshop.sendToProject.connect(self.slot_from_workshop)
         self.howto.openPage.connect(self.go)
-        self.workshop.sendPalette.connect(self.palette_from_workshop)
         self.cars.carsChanged.connect(self.cars_changed)
+        self.generator.surprised.connect(self.random_car)
         self._layout_timer = QTimer(self)
         self._layout_timer.setSingleShot(True)
         self._layout_timer.setInterval(90)
@@ -130,27 +107,36 @@ class MainWindow(QMainWindow):
         self._layout_changed()
         self.cars.placementChanged.connect(self._repaint_previews)
         self.car_box.currentIndexChanged.connect(self._car_picked)
-        self.wheel_box.currentIndexChanged.connect(self._wheels_picked)
-        self.wheel_colour.currentIndexChanged.connect(self._wheels_picked)
-        self.paint_switches = [self.projects.paint, self.generator.paint, self.workshop.colours.paint, self.workshop.board.paint]
+        self.paint_switches = [self.projects.paint, self.generator.paint, self.workshop.board.paint]
         for sw in self.paint_switches:
             sw.set_mode(carrender.PAINT)
             sw.changed.connect(self._paint_picked)
+        self.theme_box = QComboBox()
+        for key, t in th.THEMES.items():
+            self.theme_box.addItem(t["label"], key)
+            self.theme_box.setItemData(self.theme_box.count() - 1, t["blurb"], Qt.ToolTipRole)
+        self.theme_box.setCurrentIndex(max(0, self.theme_box.findData(th.CURRENT)))
+        self.theme_box.setToolTip("The look of the program (Ctrl+T switches to the next one)")
+        self.theme_box.activated.connect(lambda _i: self.set_theme(self.theme_box.currentData()))
+        nxt = QAction("Next theme", self)
+        nxt.setShortcut(QKeySequence("Ctrl+T"))
+        nxt.triggered.connect(self.next_theme)
+        self.addAction(nxt)
         self._corner = QWidget()
         cl2 = QHBoxLayout(self._corner)
         cl2.setContentsMargins(0, 0, 10, 0)
+        cl2.addWidget(self.theme_box)
         tag = QLabel("Preview car")
         tag.setObjectName("muted")
         cl2.addWidget(tag)
         cl2.addWidget(self.car_box)
-        cl2.addWidget(self.wheel_box)
-        cl2.addWidget(self.wheel_colour)
         self.menuBar().setCornerWidget(self._corner, Qt.TopRightCorner)
         self.updater = UpdateController(self)
         self.updater.available.connect(self._update_available)
         self._update_btn = None
         self._menus()
         self.go(0)
+        QTimer.singleShot(700, self.rail.shine)
         if (updates.can_self_update() or os.environ.get("KAIZEN_UPDATE_CHECK")) and not os.environ.get("KAIZEN_SELFTEST") \
                 and self.settings.value("autoUpdate", True, type=bool):
             QTimer.singleShot(4000, lambda: self.updater.check(manual=False))
@@ -186,6 +172,35 @@ class MainWindow(QMainWindow):
         lic.triggered.connect(lambda: LicencesDialog(self).exec())
         h.addAction(lic)
 
+    def random_car(self):
+        """After a surprise: another preview car, chosen at random (never the one that is already shown)."""
+        n = self.car_box.count()
+        if n > 1:
+            i = random.choice([k for k in range(n) if k != self.car_box.currentIndex()])
+            self.car_box.setCurrentIndex(i)
+
+    def next_theme(self):
+        keys = list(th.THEMES)
+        self.set_theme(keys[(keys.index(th.CURRENT) + 1) % len(keys)])
+
+    def set_theme(self, key):
+        """Switch the look of the whole program: colours, style sheet, rail, notes and previews."""
+        key = th.apply(key)
+        self.settings.setValue("theme", key)
+        QApplication.instance().setPalette(th.qpalette())
+        QApplication.instance().setStyleSheet(build_qss())
+        self.theme_box.blockSignals(True)
+        self.theme_box.setCurrentIndex(max(0, self.theme_box.findData(key)))
+        self.theme_box.blockSignals(False)
+        self.setWindowIcon(app_icon())
+        QApplication.instance().setWindowIcon(app_icon())
+        for w in QApplication.allWidgets():
+            if hasattr(w, "retheme"):
+                w.retheme()
+        for w in self.findChildren(QWidget):
+            w.update()
+        self.flash(f"Theme: {th.THEMES[key]['label']}")
+
     def _update_available(self, info):
         self._update_info = info
         if self._update_btn is None:
@@ -199,12 +214,6 @@ class MainWindow(QMainWindow):
         self.generator.apply_slot(key, value)
         self.go(1)
         self.flash(f"Gradient {value[0]} → {value[1]} is now in the {key.replace('_', ' ')} slot of the new project")
-
-    def palette_from_workshop(self, slots):
-        for key, value in slots.items():
-            self.generator.apply_slot(key, value)
-        self.go(1)
-        self.flash("The sponsor and outline colours are now in the new project")
 
     def back_up(self):
         ok, text = backup.status(self.vault.root)
@@ -228,7 +237,22 @@ class MainWindow(QMainWindow):
 
     def go(self, i):
         self.nav.button(i).setChecked(True)
+        changed = self.stack.currentIndex() != i
         self.stack.setCurrentIndex(i)
+        if changed and th.ANIMATE and self.isVisible():
+            self._fade(self.stack.widget(i))
+
+    def _fade(self, page):
+        """The new page fades in quickly; the effect is removed again at the end, because it slows drawing down."""
+        eff = QGraphicsOpacityEffect(page)
+        page.setGraphicsEffect(eff)
+        anim = QPropertyAnimation(eff, b"opacity", page)
+        anim.setDuration(190)
+        anim.setStartValue(.0)
+        anim.setEndValue(1.0)
+        anim.setEasingCurve(QEasingCurve.OutCubic)
+        anim.finished.connect(lambda: page.setGraphicsEffect(None))
+        anim.start(QPropertyAnimation.DeleteWhenStopped)
 
     def flash(self, text):
         self.statusBar().showMessage(text, 6000)
@@ -247,21 +271,12 @@ class MainWindow(QMainWindow):
         self.car_box.setCurrentIndex(i)
         self.car_box.blockSignals(False)
         render.set_preview_car(self.car_box.currentData())
-        self._wheel_controls()
 
     def _car_picked(self, _i):
         car = self.car_box.currentData()
         render.set_preview_car(car)
         self.settings.setValue("previewCar", car.id if car else "")
-        self._wheel_controls()
         self._repaint_previews()
-
-    def _wheel_controls(self):
-        """The wheel boxes only matter for a car that comes without wheels (it has positions for them)."""
-        car = self.car_box.currentData()
-        on = bool(car is not None and car.data.get("wheels"))
-        self.wheel_box.setVisible(on)
-        self.wheel_colour.setVisible(on)
 
     def _paint_picked(self, mode):
         """Gradient or solid colour: one choice for every preview, so all the switches follow it."""
@@ -271,18 +286,10 @@ class MainWindow(QMainWindow):
             sw.set_mode(mode)
         self._repaint_previews()
 
-    def _wheels_picked(self, _i):
-        carrender.WHEEL_CHOICE = (self.wheel_box.currentData(), self.wheel_colour.currentData())
-        self.settings.setValue("wheelDesign", self.wheel_box.currentData())
-        self.settings.setValue("wheelColour", self.wheel_colour.currentData())
-        carrender.clear_cache()
-        self._repaint_previews()
-
     def _repaint_previews(self):
         self.projects.view.viewport().update()
         self.projects.livery.update()
         self.generator.livery.update()
-        self.workshop.colours.stage.update()
         self.workshop.board.refresh_car()
         self.workshop.gradients.stage.update()
         self.projects.refresh_on_car()
@@ -361,19 +368,28 @@ def choose_vault(settings):
 def main():
     app = QApplication(sys.argv)
     app.setApplicationName("StukeZ Designworks Studio")
+    settings = QSettings("KaizenCave", "KaizenStudio")
+    th.apply(str(settings.value("theme", th.DEFAULT_THEME)))
+    app.setPalette(th.qpalette())
     app.setStyleSheet(build_qss())
     install_cut_frames(app)
     app.setWindowIcon(app_icon())
-    settings = QSettings("KaizenCave", "KaizenStudio")
     root = choose_vault(settings)
     if root is None:
         return 1
+    splash = None
+    if not os.environ.get("KAIZEN_SELFTEST"):
+        splash = QSplashScreen(logo.splash_pixmap())
+        splash.show()
+        app.processEvents()
     app.setOverrideCursor(Qt.WaitCursor)
     try:
         win = MainWindow(Vault(root), settings)
     finally:
         app.restoreOverrideCursor()
     win.show()
+    if splash is not None:
+        splash.finish(win)
     shot = os.environ.get("KAIZEN_SELFTEST")
     if shot:   # lets a built exe prove it works: save a screenshot of the window and quit
         def selftest():

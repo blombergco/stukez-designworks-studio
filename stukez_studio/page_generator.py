@@ -111,6 +111,7 @@ class GeneratorPage(QWidget):
     saved = Signal(object)
     status = Signal(str)
     palette_changed = Signal(object)
+    surprised = Signal()           # a surprise was asked for: the window may pick another car too
 
     def __init__(self, vault):
         super().__init__()
@@ -199,7 +200,9 @@ class GeneratorPage(QWidget):
         actions = QHBoxLayout()
         actions.addWidget(button("Export card (PNG)", slot=self.export_card))
         actions.addWidget(button("Copy hex list", slot=self.copy_hex))
-        actions.addWidget(button("Make a surprise", slot=self.surprise))
+        actions.addWidget(button("Surprise me", slot=self.surprise_all))
+        self.surprise_btn = actions.itemAt(actions.count() - 1).widget()
+        self.surprise_btn.setToolTip("A new random palette, and a random car to see it on")
         actions.addStretch()
         right = QVBoxLayout()
         right.setContentsMargins(10, 0, 0, 0)
@@ -290,6 +293,10 @@ class GeneratorPage(QWidget):
             r.lock.setChecked(False)
         self.name.clear()
         self.generate()
+
+    def surprise_all(self):
+        self.surprise()
+        self.surprised.emit()
 
     def suggest_name(self):
         self.name.setText(pal.suggest_name(self.palette(), self.selected_moods(), self.vault.used_names(), self.rng))

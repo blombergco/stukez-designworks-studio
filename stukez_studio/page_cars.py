@@ -9,6 +9,7 @@ from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox, QDialog, QDia
                                QProgressDialog, QSizePolicy, QSplitter, QTabBar, QTableWidget, QTableWidgetItem,
                                QVBoxLayout, QWidget)
 
+from . import theme as th
 from . import carrender
 from .cars import VIEWS, ZONE_NAMES, default_zones, find_views, scan_folder
 from .oncar import make_tile, sponsor_context
@@ -260,9 +261,9 @@ class ZoneEditor(QWidget):
     def paintEvent(self, _e):
         p = QPainter(self)
         p.setRenderHint(QPainter.Antialiasing)
-        p.fillRect(self.rect(), QColor("#120a0d"))
+        p.fillRect(self.rect(), QColor(th.PANEL))
         if self.car is None or self.view not in self.car.views():
-            p.setPen(QColor("#a8999c"))
+            p.setPen(QColor(th.MUTED))
             p.drawText(self.rect(), Qt.AlignCenter, "This car has no capture of this view")
             return
         ir = self._image_rect()

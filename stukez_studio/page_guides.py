@@ -3,6 +3,7 @@ from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (QHBoxLayout, QLineEdit, QListWidget, QListWidgetItem, QSplitter, QVBoxLayout, QWidget)
 
+from . import theme as th
 from .theme import head_font
 from .widgets import NoteView, button, label
 
@@ -70,7 +71,7 @@ class GuidesPage(QWidget):
             head = QListWidgetItem(group)
             head.setFlags(Qt.NoItemFlags)
             head.setFont(head_font(18))
-            head.setForeground(QColor("#ff5a68"))
+            head.setForeground(QColor(th.RED_HI))
             self.list.addItem(head)
             for n in names:
                 path = self._guide_path(group, n)

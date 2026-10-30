@@ -11,6 +11,7 @@ from PySide6.QtWidgets import (QAbstractItemView, QApplication, QComboBox, QFile
 
 from . import export, render
 from .backend import write_ase
+from .compare import CompareDialog
 from .oncar import render_placement
 from .templates import export_template
 from .widgets import ChipGrid, LiveryPreview, NoteView, PaintSwitch, StudioButton, button, copy_text, label, pill, run_build
@@ -204,7 +205,8 @@ class ProjectsPage(QWidget):
         actions = QHBoxLayout()
         for text, slot, primary in (("Export palette card (PNG)", self.export_card, True), ("Export .ase swatches", self.export_ase, False),
                                     ("Copy all hex", self.copy_hex, False), ("Open note", self.open_note, False),
-                                    ("Show folder", self.show_folder, False), ("Export package (ZIP)", self.export_package, False)):
+                                    ("Show folder", self.show_folder, False), ("Export package (ZIP)", self.export_package, False),
+                                    ("Compare…", self.compare, False)):
             actions.addWidget(button(text, primary, slot))
         self.build_btn = button("Build missing parts", slot=self.build_missing)
         self.build_btn.setToolTip("Creates the Detail kit, Build sheet with sponsor kit and Placement preview this project lacks")
@@ -212,8 +214,7 @@ class ProjectsPage(QWidget):
         tpl = StudioButton("Illustrator template ▾")
         tpl.setToolTip("Capture of the preview car on its original canvas, zone guides and an SVG with layers, in this project's colours")
         menu = QMenu(tpl)
-        for view in ("side", "top", "front", "rear", "all"):
-            menu.addAction(f"{view.capitalize()} view" if view != "all" else "All views", lambda v=view: self.export_template_for(v))
+        menu.aboutToShow.connect(lambda m=menu: self._fill_template_menu(m))
         tpl.setMenu(menu)
         actions.addWidget(tpl)
         actions.addStretch()
@@ -362,6 +363,14 @@ class ProjectsPage(QWidget):
         self.openPrompt.emit(li.data(Qt.UserRole), self.current)
 
     # ------------------------------------------------------------------ actions
+    def compare(self):
+        """Two projects on the preview car, one above the other."""
+        projects = self.vault.projects()
+        if len(projects) < 2:
+            QMessageBox.information(self, "Compare", "You need at least two projects to compare.")
+            return
+        CompareDialog(projects, self.current.id if self.current else None, self).exec()
+
     def export_card(self):
         p = self.current
         if not p:
@@ -409,6 +418,18 @@ class ProjectsPage(QWidget):
             self.reload()
             self.select_project(p.id)
             self.status.emit(f"Built {', '.join(res['built']).lower()} for {p.title}" + (f". {res['notes'][0]}" if res["notes"] else ""))
+
+    def _fill_template_menu(self, menu):
+        """Only the views the preview car has, and all of them when it has more than one."""
+        menu.clear()
+        car = render.PREVIEW_CAR
+        views = car.views() if car is not None else []
+        for view in views:
+            menu.addAction(f"{view.capitalize()} view", lambda v=view: self.export_template_for(v))
+        if len(views) > 1:
+            menu.addAction("All views", lambda: self.export_template_for("all"))
+        if not views:
+            menu.addAction("Choose a preview car first").setEnabled(False)
 
     def export_template_for(self, view):
         car, p = render.PREVIEW_CAR, self.current

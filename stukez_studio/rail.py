@@ -1,11 +1,13 @@
 """The navigation rail: wordmark, hand-drawn page icons, and a racing stripe along the bottom."""
-from PySide6.QtCore import QPointF, QRectF, Qt
+from PySide6.QtCore import QEasingCurve, QPointF, QRectF, Qt, QVariantAnimation
 from PySide6.QtGui import QColor, QLinearGradient, QPainter, QPainterPath, QPen, QPolygonF
 from PySide6.QtWidgets import QToolButton, QWidget
 
 from . import __channel__
+from .logo import draw_mark
 from .render import chamfer_path
-from .theme import BG_DEEP, BORDER, EMBER, INK, MUTED, RED, body_font, head_font
+from . import theme as th
+from .theme import body_font, head_font
 
 RAIL_W = 96
 LOGO_H = 132
@@ -109,11 +111,11 @@ class NavButton(QToolButton):
             c = 16
             g = QLinearGradient(r.topLeft(), r.topRight())
             if on:
-                g.setColorAt(0, QColor(255, 46, 63, 150))
-                g.setColorAt(1, QColor(255, 46, 63, 28))
+                g.setColorAt(0, th.accent(th.NAV_ALPHA))
+                g.setColorAt(1, th.accent(28))
             else:
-                g.setColorAt(0, QColor(255, 46, 63, 46))
-                g.setColorAt(1, QColor(255, 46, 63, 6))
+                g.setColorAt(0, th.accent(46))
+                g.setColorAt(1, th.accent(6))
             p.setPen(Qt.NoPen)
             p.setBrush(g)
             p.drawPath(chamfer_path(r, c))
@@ -123,10 +125,10 @@ class NavButton(QToolButton):
         p.save()
         p.translate(r.center().x() - 14 - 2, 11)
         draw_icon(p, self.icon_key, QColor("#ffffff") if on else (QColor("#f0d8dc") if hot else QColor("#b9a9ac")),
-                  QColor(EMBER) if on else QColor(RED))
+                  QColor(th.EMBER) if on else QColor(th.RED))
         p.restore()
         p.setFont(head_font(15))
-        p.setPen(QColor("#ffffff") if on else (QColor("#f0d8dc") if hot else QColor(MUTED)))
+        p.setPen(QColor("#ffffff") if on else (QColor("#f0d8dc") if hot else QColor(th.MUTED)))
         p.drawText(QRectF(0, 46, r.width() - 2, 24), Qt.AlignHCenter | Qt.AlignTop, self.text())
         p.end()
 
@@ -138,43 +140,59 @@ class Rail(QWidget):
         super().__init__()
         self.setObjectName("side")
         self.setFixedWidth(RAIL_W)
+        self.setMouseTracking(True)
+        self._shine = None
+        self._anim = QVariantAnimation(self, startValue=0.0, endValue=1.0, duration=900)
+        self._anim.setEasingCurve(QEasingCurve.InOutSine)
+        self._anim.valueChanged.connect(self._shone)
+        self._anim.finished.connect(lambda: self._shone(None))
+
+    def _shone(self, v):
+        self._shine = v
+        self.update(0, 0, self.width(), LOGO_H)
+
+    def shine(self):
+        """One band of light across the mark (also when the pointer comes over it)."""
+        if th.ANIMATE and self._anim.state() != QVariantAnimation.Running:
+            self._anim.start()
+
+    def mouseMoveEvent(self, e):
+        if e.position().y() < LOGO_H:
+            self.shine()
+        super().mouseMoveEvent(e)
 
     def paintEvent(self, _e):
         p = QPainter(self)
         p.setRenderHint(QPainter.Antialiasing)
         w, h = self.width(), self.height()
         g = QLinearGradient(0, 0, 0, h)
-        g.setColorAt(0, QColor(BG_DEEP))
-        g.setColorAt(.6, QColor("#0d0507"))
-        g.setColorAt(1, QColor("#2a060c"))
+        g.setColorAt(0, QColor(th.BG_DEEP))
+        g.setColorAt(.6, QColor(th.RAIL_MID))
+        g.setColorAt(1, QColor(th.RAIL_END))
         p.fillRect(self.rect(), g)
         # the racing stripe: three bands at 45 degrees across the foot of the rail
-        for dy, t, col in ((0, 26, QColor(255, 46, 63, 230)), (-40, 5, QColor(255, 255, 255, 235)), (-52, 12, QColor(168, 15, 32, 200))):
+        for dy, t, col in ((0, 26, th.accent(230)), (-40, 5, QColor(255, 255, 255, 235)), (-52, 12, QColor(th.RED_DARK))):
             y0 = h - 30 + dy
             p.setPen(Qt.NoPen)
             p.setBrush(col)
             p.drawPolygon(_poly((0, y0 + 0), (w, y0 - w), (w, y0 - w + t), (0, y0 + t)))
-        p.setPen(QPen(QColor(BORDER), 1))
+        p.setPen(QPen(QColor(th.BORDER), 1))
         p.drawLine(w - 1, 0, w - 1, h)
-        # the mark: three slanted bars (dark, red, white), then the name
+        # the mark: the S and Z plate, then the name
         cx = w / 2 - 1
-        for i, (col, edge) in enumerate((("#1a0b0f", QColor(EMBER)), ("#ff2e3f", None), ("#ffffff", None))):
-            x = cx - 21 + i * 15
-            p.setBrush(QColor(col))
-            p.setPen(QPen(edge, 1.2) if edge else Qt.NoPen)
-            p.drawPolygon(_poly((x + 6, 22), (x + 13, 22), (x + 7, 58), (x, 58)))
+        draw_mark(p, QRectF(cx - 24, 14, 48, 48), shine=self._shine)
         p.setFont(head_font(21))
-        p.setPen(QColor(INK))
+        p.setPen(QColor(th.INK))
         p.drawText(QRectF(0, 66, w - 2, 26), Qt.AlignHCenter | Qt.AlignVCenter, "StukeZ")
         p.setFont(body_font(11))
-        p.setPen(QColor(MUTED))
+        p.setPen(QColor(th.MUTED))
         p.drawText(QRectF(0, 90, w - 2, 16), Qt.AlignHCenter | Qt.AlignVCenter, "Designworks")
         if __channel__:
             tag = QRectF(cx - 17, 110, 36, 15)
             p.setPen(Qt.NoPen)
-            p.setBrush(QColor(RED))
+            p.setBrush(QColor(th.RED))
             p.drawPath(chamfer_path(tag, 5))
             p.setFont(head_font(13))
-            p.setPen(QColor("#ffffff"))
+            p.setPen(QColor(th.ON_ACCENT))
             p.drawText(tag, Qt.AlignCenter, __channel__)
         p.end()

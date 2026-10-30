@@ -4,10 +4,11 @@ from PySide6.QtGui import QColor, QDesktopServices, QGuiApplication, QLinearGrad
 from PySide6.QtWidgets import (QApplication, QButtonGroup, QHBoxLayout, QLabel, QMessageBox, QProgressDialog, QPushButton, QVBoxLayout,
                                QSizePolicy, QTextBrowser, QWidget)
 
-from . import render
+from . import carrender, render
+from .logo import draw_mark
 from .render import chamfer_path
 
-from .theme import ACCENT, BORDER, EMBER, INK, MUTED, NOTE_CSS, RED, RED_DARK, RED_HI  # noqa: F401
+from . import theme as th
 
 
 def copy_text(text):
@@ -24,7 +25,7 @@ class Heading(QLabel):
         t = min(h * .62, 26.0)
         y0 = (h - t) / 2
         p.setPen(Qt.NoPen)
-        for x, w, col in ((2, 7, QColor(RED)), (13, 3.5, QColor("#ffffff"))):
+        for x, w, col in ((2, 7, QColor(th.RED)), (13, 3.5, QColor("#ffffff"))):
             poly = QPolygonF([QPointF(x + t * .42, y0), QPointF(x + t * .42 + w, y0), QPointF(x + w, y0 + t), QPointF(x, y0 + t)])
             p.setBrush(col)
             p.drawPolygon(poly)
@@ -100,17 +101,17 @@ class StudioButton(QPushButton):
         # surface
         if lit:
             g = QLinearGradient(r.topLeft(), r.topRight())
-            g.setColorAt(0, QColor(RED_HI if hot else RED))
-            g.setColorAt(1, QColor("#d4122a" if hot else "#b3001b"))
+            g.setColorAt(0, QColor(th.RED_HI if hot else th.RED))
+            g.setColorAt(1, QColor(th.PRIMARY_END_HOT if hot else th.PRIMARY_END))
             if not on:
-                g.setColorAt(0, QColor("#3a171d"))
-                g.setColorAt(1, QColor("#2a1014"))
+                g.setColorAt(0, QColor(th.OFF_TOP))
+                g.setColorAt(1, QColor(th.OFF_BOT))
         else:
             g = QLinearGradient(r.topLeft(), r.bottomLeft())
-            g.setColorAt(0, QColor("#3a1a21" if hot else "#2b161b"))
-            g.setColorAt(1, QColor("#22090e" if hot else "#170b0f"))
+            g.setColorAt(0, QColor(th.BTN_TOP_HOT if hot else th.BTN_TOP))
+            g.setColorAt(1, QColor(th.BTN_BOT_HOT if hot else th.BTN_BOT))
         if down:
-            g = QColor(RED_DARK)
+            g = QColor(th.RED_DARK)
         p.setPen(Qt.NoPen)
         p.setBrush(g)
         p.drawPath(path)
@@ -139,19 +140,19 @@ class StudioButton(QPushButton):
         p.restore()
         # edge
         p.setBrush(Qt.NoBrush)
-        edge = QColor(EMBER) if lit else (QColor(RED) if hot or self.isChecked() else QColor("#5e1d28"))
+        edge = QColor(th.EMBER) if lit else (QColor(th.RED) if hot or self.isChecked() else QColor(th.BORDER_HI))
         if not on:
-            edge = QColor("#33161c")
+            edge = QColor(th.BORDER)
         p.setPen(QPen(edge, 1))
         p.drawPath(path)
         if not lit and on:
-            render.slash_edges(p, r, c, QColor(255, 46, 63, 255 if hot else 150), 1.5)
+            render.slash_edges(p, r, c, th.accent(255 if hot else 150), 1.5)
         if self.hasFocus() and self._keys:
             p.setPen(QPen(QColor("#ffffff"), 1.5, Qt.DashLine))
             p.drawPath(chamfer_path(r.adjusted(-1.5, -1.5, 1.5, 1.5), c))
         # text
         p.setFont(self.font())
-        p.setPen(QColor("#ffffff") if on else QColor("#6f5d61"))
+        p.setPen((QColor(th.ON_ACCENT) if lit else QColor("#ffffff")) if on else QColor(th.DISABLED))
         pad_r = 14 if kind == "primary" else 0
         p.drawText(r.adjusted(0, 0, -pad_r, 0), Qt.AlignCenter, self.text())
         p.end()
@@ -168,10 +169,9 @@ def button(text, primary=False, slot=None):
 
 class PaintSwitch(QWidget):
     """Gradient or solid colour: how the car is painted in every preview. One state for the whole program (see MainWindow)."""
-    changed = Signal(str)       # "" = the gradient (the livery cut), "base" or "tribal" = one solid colour
+    changed = Signal(str)       # "" = the gradient (the livery cut), "base" = one solid colour
     MODES = (("Gradient", "", "The livery as designed: the base colour fades into the tribal colour over the car"),
-             ("Solid base", "base", "The whole car in one flat colour: the base colour (the first one, if the base is a gradient)"),
-             ("Solid tribals", "tribal", "The whole car in one flat colour: the tribal colour (the first one, if it is a gradient)"))
+             ("Solid base", "base", "The whole car in one flat colour: the base colour (the first one, if the base is a gradient)"))
 
     def __init__(self, mode=""):
         super().__init__()
@@ -205,18 +205,24 @@ class NoteView(QTextBrowser):
         super().__init__()
         self.vault = vault
         self.setOpenLinks(False)
-        self.document().setDefaultStyleSheet(NOTE_CSS)
+        self.document().setDefaultStyleSheet(th.NOTE_CSS)
         self.anchorClicked.connect(self._clicked)
         self.history = []
 
     def show_note(self, path, remember=True):
         if path is None or not path.exists():
-            self.setHtml("<p style='color:#a8999c'>Not generated for this project yet.</p>")
+            self.setHtml(f"<p style='color:{th.MUTED}'>Not generated for this project yet.</p>")
             return
         if remember:
             self.history.append(path)
         self.setHtml(self.vault.note_html(path))
         self.verticalScrollBar().setValue(0)
+
+    def retheme(self):
+        """After a theme change: the notes get the new colours."""
+        self.document().setDefaultStyleSheet(th.NOTE_CSS)
+        if self.history:
+            self.show_note(self.history[-1], remember=False)
 
     def back(self):
         if len(self.history) > 1:
@@ -260,7 +266,7 @@ class Chip(QWidget):
         p.setBrush(render.brush(r, self.value))
         p.drawPath(shape)
         render.slash_edges(p, r, 12, QColor(255, 255, 255, 110 if self._hover else 60), 1.5)
-        p.setPen(QColor(INK))
+        p.setPen(QColor(th.INK))
         f = p.font()
         f.setFamily("Bahnschrift SemiBold Condensed")
         f.setPixelSize(15)
@@ -269,7 +275,7 @@ class Chip(QWidget):
         f.setFamily("Bahnschrift")
         f.setPixelSize(12)
         p.setFont(f)
-        p.setPen(QColor(MUTED))
+        p.setPen(QColor(th.MUTED))
         vals = self.value if isinstance(self.value, (list, tuple)) else [self.value]
         p.drawText(QRectF(0, 70, self.width(), 16), Qt.AlignLeft, " → ".join(v[1:] for v in vals) if len(vals) > 1 else vals[0])
 
@@ -312,17 +318,59 @@ class ChipGrid(QWidget):
             chip.set(lbl, v)
 
 
+class _Swept:
+    """A palette with its cut moved to another place along the car; everything else is the palette's own."""
+
+    def __init__(self, base, pos):
+        self._base, self.cut_pos = base, pos
+
+    def __getattr__(self, name):
+        return getattr(self._base, name)
+
+
+def _colours(d):
+    d = render.pal_of(d)
+    return repr([getattr(d, k, None) for k in ("base", "tribal", "tribal_outline", "sponsor_a", "sponsor_a_outline", "sponsor_b", "sponsor_b_outline")])
+
+
 class LiveryPreview(QWidget):
+    """The car with a palette on a stage. A new palette does not jump in: the cut of the livery sweeps across the car."""
+
     def __init__(self, min_h=230, plates=True):
         super().__init__()
         self.pal = None
         self.plates = plates      # the sponsor plates on the car; the Projects page shows the bare car
+        self._sweep = None        # None, or how far the sweep has come (0..1)
+        self._anim = QVariantAnimation(self, startValue=0.0, endValue=1.0, duration=620)
+        self._anim.setEasingCurve(QEasingCurve.OutCubic)
+        self._anim.valueChanged.connect(self._swept)
+        self._anim.finished.connect(self._swept_done)
         self.setMinimumHeight(min_h)
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
     def set_palette(self, d):
-        self.pal = d
+        old, self.pal = self.pal, d
+        if (th.ANIMATE and old is not None and self.isVisible() and carrender.paint_mode(render.pal_of(d)) == ""
+                and _colours(old) != _colours(d)):
+            self._anim.stop()
+            self._anim.start()
         self.update()
+
+    def _swept(self, v):
+        self._sweep = v
+        self.update()
+
+    def _swept_done(self):
+        self._sweep = None
+        self.update()
+
+    def _shown(self):
+        """The palette to draw now: while sweeping, its cut starts past the front of the car and settles where it belongs."""
+        if self._sweep is None or self.pal is None:
+            return self.pal
+        target = carrender.cut_of(render.pal_of(self.pal))[1]
+        start = 1.3
+        return _Swept(render.pal_of(self.pal), round(start + (target - start) * self._sweep, 2))
 
     def paintEvent(self, _e):
         p = QPainter(self)
@@ -330,7 +378,7 @@ class LiveryPreview(QWidget):
         r = QRectF(self.rect()).adjusted(1, 1, -1, -1)
         render.draw_stage(p, r, cut=22)
         if self.pal is not None:
-            render.draw_car(p, r.adjusted(18, 14, -18, -8), self.pal, plates=self.plates)
+            render.draw_car(p, r.adjusted(18, 14, -18, -8), self._shown(), plates=self.plates)
 
 
 def run_build(parent, vault, pid, only_missing=True):
@@ -364,7 +412,7 @@ def pill(text):
 
 
 class _Mark(QWidget):
-    """The livery mark from the rail: three slanted bars, dark, red and white."""
+    """The mark of the rail: the S and Z plate."""
 
     def __init__(self):
         super().__init__()
@@ -373,11 +421,7 @@ class _Mark(QWidget):
     def paintEvent(self, _e):
         p = QPainter(self)
         p.setRenderHint(QPainter.Antialiasing)
-        p.setPen(Qt.NoPen)
-        for i, col in enumerate(("#2a1419", RED, "#ffffff")):
-            x = 2 + i * 16
-            p.setBrush(QColor(col))
-            p.drawPolygon(QPolygonF([QPointF(x + 6, 0), QPointF(x + 13, 0), QPointF(x + 7, 36), QPointF(x, 36)]))
+        draw_mark(p, QRectF(9, 0, 36, 36))
         p.end()
 
 
@@ -402,8 +446,8 @@ class EmptyState(QWidget):
         p = QPainter(self)
         p.setRenderHint(QPainter.Antialiasing)
         r = QRectF(self.rect()).adjusted(.5, .5, -.5, -.5)
-        p.setPen(QPen(QColor(BORDER), 1))
-        p.setBrush(QColor(19, 10, 13, 120))
+        p.setPen(QPen(QColor(th.BORDER), 1))
+        p.setBrush(th.alpha(th.PANEL, 120))
         p.drawPath(chamfer_path(r, 18))
-        render.slash_edges(p, r, 18, QColor(RED), 2)
+        render.slash_edges(p, r, 18, QColor(th.RED), 2)
         p.end()

@@ -1,9 +1,8 @@
-"""The Workshop page: tools for making parts of a livery (logos placed on the car, gradients, sponsor and outline colours, logo outlines) outside a project."""
+"""The Workshop page: tools for making parts of a livery (logos placed on the car, gradients, logo outlines) outside a project."""
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QTabWidget, QVBoxLayout, QWidget
 
 from .page_board import BoardTab
-from .page_colours import ColoursTab
 from .page_gradients import GradientsTab
 from .page_outlines import OutlinesTab
 from .widgets import label
@@ -12,7 +11,6 @@ from .widgets import label
 class WorkshopPage(QWidget):
     status = Signal(str)
     sendToProject = Signal(str, object)
-    sendPalette = Signal(object)
     layoutChanged = Signal()
 
     def __init__(self, vault, palette_source=None):
@@ -20,17 +18,14 @@ class WorkshopPage(QWidget):
         self.setObjectName("page")
         self.board = BoardTab(vault, palette_source)
         self.gradients = GradientsTab(vault)
-        self.colours = ColoursTab(vault, palette_source)
         self.outlines = OutlinesTab(vault)
-        for tab in (self.board, self.gradients, self.colours, self.outlines):
+        for tab in (self.board, self.gradients, self.outlines):
             tab.status.connect(self.status)
         self.board.layoutChanged.connect(self.layoutChanged)
         self.gradients.sendToProject.connect(self.sendToProject)
-        self.colours.sendPalette.connect(self.sendPalette)
         self.tabs = QTabWidget()
         self.tabs.addTab(self.board, "Place on car")
         self.tabs.addTab(self.gradients, "Gradients")
-        self.tabs.addTab(self.colours, "Sponsors and outlines")
         self.tabs.addTab(self.outlines, "Logo outlines")
         lay = QVBoxLayout(self)
         lay.setContentsMargins(18, 14, 18, 10)

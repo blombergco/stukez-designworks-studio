@@ -12,7 +12,6 @@ from PIL import Image, ImageFilter
 from PySide6.QtCore import QPointF, QRectF, Qt
 from PySide6.QtGui import QBrush, QColor, QFont, QImage, QLinearGradient, QPainter, QPen
 
-from . import wheels
 
 GLASS = np.array([16, 15, 26], dtype=np.float32)
 _cache = OrderedDict()
@@ -25,7 +24,7 @@ PREVIEW_PLATES = {"side": {"5": "A", "4": "B", "7": "A"}, "top": {"2": "A", "8":
                   "front": {"2": "A", "3": "B"}, "rear": {"9": "A", "10": "B"}}
 
 
-# how the car is painted: "" = the livery (base behind the cut, tribal colour in front), "base" or "tribal" = one flat colour all over
+# how the car is painted: "" = the livery (base behind the cut, tribal colour in front), "base" = the base colour flat all over
 PAINT = ""
 
 
@@ -33,24 +32,7 @@ def paint_mode(d):
     """A palette can force a mode with `paint` (the gradient page does, to show its cut); otherwise the program-wide PAINT counts."""
     mode = getattr(d, "paint", None)
     mode = PAINT if mode is None else mode
-    return mode if mode in ("base", "tribal") else ""
-
-
-# the wheels shown on cars that have positions for them: (design, colour); a design of "" uses the car's own choice, "none" hides them
-WHEEL_CHOICE = ("", "")
-
-
-def wheel_set(car, view):
-    """[(x, y, r, design, colour)] as fractions of the view (x, y of the centre, r of the tyre against the width) for a car."""
-    spots = car.data.get("wheels", {}).get(view)
-    if not spots:
-        return []
-    own = car.data.get("default_wheel", {})
-    design = WHEEL_CHOICE[0] or own.get("design", "")
-    if design not in wheels.DESIGNS:
-        return []
-    colour = WHEEL_CHOICE[1] or own.get("colour", "bronze")
-    return [(x, y, r, design, colour) for x, y, r in spots]
+    return "base" if mode == "base" else ""
 
 
 def _pil(car, view):
@@ -196,7 +178,7 @@ def _flat(w, h, car, view, d, plates, plate_scale=1.0):
     vertical = view != "side"
     mode = paint_mode(d)
     if mode:    # one flat colour over the whole car, no cut (the first colour when the slot is a gradient)
-        p.fillRect(full, QColor(_first(d.base if mode == "base" else d.tribal)))
+        p.fillRect(full, QColor(_first(d.base)))
     elif view == "side":   # base behind the middle of the door, tribal colour in front of it, one 45 degree gradient
         p.fillRect(full, split_gradient(full, d, w, 1 if car.front_side == "right" else -1, 1))
     elif view == "top" and w >= h:   # captured lying down: "down" is the front on the left, like the side view
@@ -240,7 +222,7 @@ def render(car, view, d, width, plates=None, plate_scale=1.0):
     plates = ({} if getattr(d, "no_plates", False) else PREVIEW_PLATES.get(view, {})) if plates is None else plates
     key = (car.id, view, width, car.clean, car.glass, repr((d.base, d.tribal, d.tribal_outline, d.sponsor_a, d.sponsor_a_outline, cut_of(d),
                                                  d.sponsor_b, d.sponsor_b_outline)), repr(sorted(plates.items())),
-           repr(car.zones(view)), car.front_side, car.front_top, plate_scale, tuple(wheel_set(car, view)), paint_mode(d))
+           repr(car.zones(view)), car.front_side, car.front_top, plate_scale, paint_mode(d))
     if key in _cache:
         _cache.move_to_end(key)
         return _cache[key]
@@ -254,14 +236,6 @@ def render(car, view, d, width, plates=None, plate_scale=1.0):
         rgb = rgb * (1 - soft) + _glass_fill(glass) * soft
     out = np.dstack([rgb, alpha * 255]).astype(np.uint8)
     qi = QImage(out.data, width, h, width * 4, QImage.Format_RGBA8888).copy()
-    spots = wheel_set(car, view)
-    if spots:
-        canvas = qi.convertToFormat(QImage.Format_ARGB32_Premultiplied)
-        wp = QPainter(canvas)
-        for x, y, r, design, colour in spots:
-            wheels.draw_wheel(wp, x * width, y * h, r * width, design, colour)
-        wp.end()
-        qi = canvas.convertToFormat(QImage.Format_RGBA8888)
     _cache[key] = qi
     if len(_cache) > CACHE_SIZE:
         _cache.popitem(last=False)

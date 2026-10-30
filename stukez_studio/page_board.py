@@ -5,6 +5,7 @@ give it the colour of Sponsor A or B, the tribal colour or any colour or gradien
 """
 import copy
 import math
+import random
 import time
 from pathlib import Path
 
@@ -15,6 +16,7 @@ from PySide6.QtWidgets import (QCheckBox, QComboBox, QDialog, QFileDialog, QInpu
 
 from . import board as bd
 from . import carrender, render
+from . import theme as th
 from .page_generator import SlotRow
 from .page_gradients import slider_row
 from .widgets import EmptyState, PaintSwitch, button, label
@@ -160,7 +162,7 @@ class BoardCanvas(QWidget):
         top = (pts[0] + pts[1]) / 2
         rot = self._rotate_handle(it, T)
         p.drawLine(top, rot)
-        p.setBrush(QColor("#080506"))
+        p.setBrush(QColor(th.BG))
         for c in pts:
             p.drawRect(QRectF(c.x() - HANDLE / 2, c.y() - HANDLE / 2, HANDLE, HANDLE))
         p.setBrush(render.RED)
@@ -546,6 +548,7 @@ class BoardTab(QWidget):
         acts = QHBoxLayout()
         acts.addWidget(button("Save image…", True, self.save_image))
         acts.addWidget(button("Copy image", slot=self.copy_image))
+        acts.addWidget(button("Shuffle", slot=self.shuffle))
         acts.addWidget(button("Undo", slot=self.undo))
         acts.addWidget(button("Redo", slot=self.redo))
         acts.addStretch()
@@ -961,6 +964,39 @@ class BoardTab(QWidget):
         it["outline"]["mode"] = mode
         self._outline_visibility(it)
         self._changed(save=True)
+
+    # ------------------------------------------------------------------ shuffle
+    def shuffle(self):
+        """Throw the items of this view into new places on the body, sizes, turns and sponsor colours: a quick way to get ideas."""
+        items = self.canvas.items()
+        if not items:
+            self.status.emit("Place something on the car first, then shuffle")
+            return
+        car = render.PREVIEW_CAR
+        right = car is not None and car.front_of(self.canvas.view) == "right"
+        side = self.canvas.view == "side"
+        # good spots on the side of a car, as seen with its front on the left: door, fender, rear quarter, hood, skirt, quarter glass
+        spots = [(.52, .62), (.22, .58), (.78, .58), (.16, .50), (.5, .8), (.66, .45), (.36, .5)]
+        random.shuffle(spots)
+        self._snapshot("shuffle")
+        sponsors = 0
+        for it in items:
+            if it["kind"] == "tribal":
+                it["x"], it["y"] = round(random.uniform(.38, .62), 4), round(random.uniform(.5, .62), 4)
+                it["w"] = round(random.uniform(.32, .55), 4)
+                it["rot"] = round(random.choice([0, 0, random.uniform(-6, 6)]), 1)
+                continue
+            x, y = spots[sponsors % len(spots)] if side else (random.uniform(.3, .7), random.uniform(.2, .8))
+            sponsors += 1
+            it["x"] = round(min(1.0, max(0.0, (1 - x if right and side else x) + random.uniform(-.02, .02))), 4)
+            it["y"] = round(y + random.uniform(-.02, .02), 4)
+            it["w"] = round(random.uniform(.09, .2), 4)
+            it["rot"] = round(random.choice([0, 0, random.uniform(-8, 8)]), 1)
+            if it["colour"]["mode"] != "original":
+                it["colour"]["mode"] = random.choice(["sponsor_a", "sponsor_b"])
+        self._selection_changed(self.canvas.selected)
+        self._changed(save=True)
+        self.status.emit("Shuffled")
 
     # ------------------------------------------------------------------ undo
     def _snapshot(self, tag):

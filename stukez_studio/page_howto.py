@@ -3,7 +3,7 @@ import markdown
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QHBoxLayout, QListWidget, QTextBrowser, QVBoxLayout, QWidget
 
-from .theme import NOTE_CSS
+from . import theme as th
 from .widgets import label
 
 # (title, markdown). Page numbers for page:N links follow the order of main.PAGES: 0 Projects, 1 New project, 2 Cars,
@@ -48,7 +48,7 @@ Every saved palette is a **project**: a card with a car in its colours and four 
 * **Open one.** Click a card. The right side shows the car, all seven colours (click a chip to copy its hex code) and tabs
   for the project note, build sheet, detail kit, patterns and the prompts that carry this palette.
 * **Gradient or solid.** The *Car paint* switch above the car has three buttons. *Gradient* shows the livery as designed.
-  *Solid base* and *Solid tribals* paint the whole car in one flat colour (the first colour, if that slot is a gradient).
+  *Solid base* paints the whole car in the base colour (the first colour, if the base is a gradient).
   It only changes the preview: the project keeps all its colours.
 * **On car.** The real sponsor logos placed in the sponsor zones of the car you picked, in this project's colours.
   Save the picture as PNG.
@@ -117,16 +117,6 @@ Pick a rear and a front colour, get suggestions for the front colour (analogous,
 the cut: its angle, where its centre is and how much of the car it covers. The studio standard is 45 degrees, centred on the
 door, over half the car. Keep favourites, export them as `.ase`, or send the pair to any slot of a new project.
 
-## Sponsors and outlines
-
-Change the colour of Sponsor A, Sponsor B and their outlines, and see them on big plates on the car.
-
-* Every slot is solid or a gradient: tick *2-colour gradient* to switch.
-* *Start from* loads the New project page or any saved project.
-* *Outlines for contrast* picks a dark or a light outline for each fill. *Sponsors as gradients* turns solid sponsors into
-  gradients. *All solid* does the opposite. *Swap A and B* swaps the two sponsors.
-* *Use in New project* sends the five colours to the New project page.
-
 ## Logo outlines
 
 Draws a contour around a logo, in one colour or a two-colour gradient. Set thickness, gap and how far to join letters, then
@@ -150,6 +140,26 @@ universal, or needing a fitment check. *Copy list* or *Save as vault note* keeps
 The reference notes of the vault: glossaries, style guide, placement and paint guides, the year plan. Links between notes
 work, and a link to a project opens it.
 """),
+    ("Looks and extras", """
+# Looks and extras
+
+## Themes
+
+The box in the top right corner (or `Ctrl+T`) switches the look of the whole program between **Red and black**, **Blue and
+black** and **Carbon and yellow**. The program remembers your choice. The logo, the buttons, the rail and the stage behind the
+cars all change with it.
+
+## Compare two projects
+
+On the [Projects](page:0) page, *Compare...* puts two projects on the Preview car, one above the other, with their seven
+colours. Choose any two in the boxes; *Swap* turns them round.
+
+## Get ideas fast
+
+* **Surprise me** on [New project](page:1) makes a new random palette and shows it on a random car.
+* **Shuffle** on *Place on car* (Workshop) throws your logos and tribals into new places, sizes and sponsor colours. Undo
+  (`Ctrl+Z`) brings the old layout back.
+"""),
     ("Files, backup, updates", """
 # Files, backup and updates
 
@@ -167,6 +177,7 @@ program never keeps your work anywhere else.
 |---|---|
 | `Ctrl+1` to `Ctrl+8` | Switch page |
 | `Ctrl+G` | Generate a palette |
+| `Ctrl+T` | Next theme |
 | `F5` | Reload from disk |
 | `Ctrl+B` | Back up to GitHub |
 | `Ctrl+Q` | Quit |
@@ -188,7 +199,7 @@ class HowToPage(QWidget):
         self.topics.setFixedWidth(250)
         self.view = QTextBrowser()
         self.view.setOpenLinks(False)
-        self.view.document().setDefaultStyleSheet(NOTE_CSS)
+        self.view.document().setDefaultStyleSheet(th.NOTE_CSS)
         self.view.anchorClicked.connect(self._link)
         self.topics.currentRowChanged.connect(self._show)
         left = QVBoxLayout()
@@ -199,6 +210,10 @@ class HowToPage(QWidget):
         lay.addLayout(left)
         lay.addWidget(self.view, 1)
         self.topics.setCurrentRow(0)
+
+    def retheme(self):
+        self.view.document().setDefaultStyleSheet(th.NOTE_CSS)
+        self._show(self.topics.currentRow())
 
     def _show(self, i):
         if i < 0:

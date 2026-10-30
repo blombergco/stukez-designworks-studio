@@ -6,12 +6,19 @@ from PySide6.QtGui import (QBrush, QColor, QImage, QLinearGradient, QPainter, QP
                            QRadialGradient)
 
 from . import carrender
+from . import theme as th
 from .theme import body_font, head_font
 
-PANEL = QColor("#130a0d")
-INK = QColor("#f5f0f1")
-MUTED = QColor("#a8999c")
-RED = QColor("#ff2e3f")
+PANEL = INK = MUTED = RED = QColor()      # the colours of the theme in use, set by _sync
+
+
+def _sync():
+    global PANEL, INK, MUTED, RED
+    PANEL, INK, MUTED, RED = QColor(th.PANEL), QColor(th.INK), QColor(th.MUTED), QColor(th.RED)
+
+
+th.on_change(_sync)
+_sync()
 
 
 # ---------------------------------------------------------------------- the cut
@@ -30,9 +37,10 @@ def chamfer_path(rect, c):
     return path
 
 
-def slash_edges(p, rect, c, color=RED, width=2.0):
+def slash_edges(p, rect, c, color=None, width=2.0):
     """Light up the two cut edges of a chamfered shape."""
     r = QRectF(rect)
+    color = RED if color is None else color
     p.setPen(QPen(color, width, Qt.SolidLine, Qt.RoundCap))
     p.drawLine(QPointF(r.right() - c, r.top()), QPointF(r.right(), r.top() + c))
     p.drawLine(QPointF(r.left(), r.bottom() - c), QPointF(r.left() + c, r.bottom()))
@@ -42,12 +50,12 @@ def _stage_fill(p, rect):
     """The garage floor behind a car: dark, a red light from above, faint 45 degree lines and a pool of light on the floor."""
     r = QRectF(rect)
     g = QLinearGradient(r.topLeft(), r.bottomLeft())
-    g.setColorAt(0, QColor("#2c1318"))
-    g.setColorAt(1, QColor("#0d0608"))
+    g.setColorAt(0, QColor(th.STAGE_TOP))
+    g.setColorAt(1, QColor(th.STAGE_BOT))
     p.fillRect(r, g)
     rg = QRadialGradient(QPointF(r.center().x(), r.top()), r.width() * .6)
-    rg.setColorAt(0, QColor(255, 46, 63, 78))
-    rg.setColorAt(1, QColor(255, 46, 63, 0))
+    rg.setColorAt(0, th.accent(78))
+    rg.setColorAt(1, th.accent(0))
     p.fillRect(r, rg)
     p.setPen(QPen(QColor(255, 255, 255, 9), 1))
     step = 26
@@ -182,7 +190,7 @@ def draw_card(p, rect, d, title, subtitle, selected=False, hover=False, number=N
     cut = 20
     path = chamfer_path(rect, cut)
     p.setClipPath(path)
-    p.fillRect(rect, QColor("#1b0f13") if hover or selected else PANEL)
+    p.fillRect(rect, QColor(th.TILE_HOT) if hover or selected else PANEL)
     top = QRectF(rect.x(), rect.y(), rect.width(), rect.height() * .60)
     _stage_fill(p, top)
     draw_car(p, top.adjusted(10, 12, -10, -4), d, plates=plates)
@@ -203,9 +211,9 @@ def draw_card(p, rect, d, title, subtitle, selected=False, hover=False, number=N
         p.setPen(QPen(RED, 2.5))
         p.drawPath(chamfer_path(rect.adjusted(1.2, 1.2, -1.2, -1.2), cut))
     else:
-        p.setPen(QPen(QColor(255, 46, 63, 120) if hover else QColor(255, 255, 255, 22), 1))
+        p.setPen(QPen(th.accent(120) if hover else QColor(255, 255, 255, 22), 1))
         p.drawPath(chamfer_path(rect.adjusted(.5, .5, -.5, -.5), cut))
-        slash_edges(p, rect.adjusted(.5, .5, -.5, -.5), cut, QColor(255, 46, 63, 230 if hover else 130), 1.6)
+        slash_edges(p, rect.adjusted(.5, .5, -.5, -.5), cut, th.accent(230 if hover else 130), 1.6)
     p.restore()
 
 
@@ -217,14 +225,14 @@ def render_card_image(d, title, subtitle="", concept="", width=1600, plates=True
              ("Sponsor B", d.sponsor_b), ("Sponsor B outline", d.sponsor_b_outline)]
     h = int(width * .70)
     img = QImage(width, h, QImage.Format_ARGB32)
-    img.fill(QColor("#080506"))
+    img.fill(QColor(th.BG))
     p = QPainter(img)
     p.setRenderHint(QPainter.Antialiasing)
     p.setRenderHint(QPainter.TextAntialiasing)
     bgl = QLinearGradient(0, 0, width, h)
-    bgl.setColorAt(0, QColor("#080506"))
-    bgl.setColorAt(.6, QColor("#12070a"))
-    bgl.setColorAt(1, QColor("#34091a"))
+    bgl.setColorAt(0, QColor(th.BG))
+    bgl.setColorAt(.6, QColor(th.BG_MID))
+    bgl.setColorAt(1, QColor(th.BG_END))
     p.fillRect(QRectF(0, 0, width, h), bgl)
     m = width * .04
     p.setPen(INK)
