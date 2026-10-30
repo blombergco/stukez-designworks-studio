@@ -223,8 +223,7 @@ BUILTIN_DIR = Path(__file__).resolve().parent / "builtin"
 
 
 # the first is the default preview car; made by make_default_car.py, make_builtin_cars.py and make_builtin_illustrations.py
-BUILTIN_ORDER = ("s13-silvia", "s13-bstyle", "s13-origin", "180sx-origin", "s14-dmax", "s15-raijin", "s15-raiji", "er34-uras",
-                 "jzx90-bnsport", "galant", "e36-coupe", "s160-junction")
+BUILTIN_ORDER = ("s13-silvia", "s15-raijin")
 
 
 def builtin_cars():

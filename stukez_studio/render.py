@@ -102,6 +102,7 @@ def first(v):
 # ---------------------------------------------------------------------- the car
 PLATE_SCALE = 0.4     # how big the sponsor plates are in previews, against their zone: small, so the car and its colours show
 PREVIEW_CAR = None   # the car used for previews: the built-in car, or one from the Car Templates library
+LAYOUT = None        # a Board (board.py) whose logos and tribals are drawn on every preview car; None = the small sponsor plates
 
 
 def set_preview_car(car):
@@ -109,15 +110,19 @@ def set_preview_car(car):
     PREVIEW_CAR = car
 
 
-def draw_real_car(p, rect, d, car, view="side", plates=True, plate_scale=None):
-    """The palette on a real car capture, fitted into rect; returns False when the car lacks that view."""
+def draw_real_car(p, rect, d, car, view="side", plates=True, plate_scale=None, layout=True):
+    """The palette on a real car capture, fitted into rect; returns False when the car lacks that view.
+
+    With a LAYOUT the board's logos and tribals are drawn on the car, recoloured with the palette, instead of the plates."""
     dpr = p.device().devicePixelRatioF() if p.device() else 1.0
     src = car.view_info(view)["size"] if view in car.views() else None
     if not src:
         return False
     ar = src[0] / src[1]
     w, h = min(rect.width(), rect.height() * ar), min(rect.height(), rect.width() / ar)
-    img = carrender.render(car, view, pal_of(d), int(w * dpr), plates=None if plates else {},
+    pl = pal_of(d)
+    board = LAYOUT if layout and not getattr(pl, "no_plates", False) and LAYOUT is not None and LAYOUT.items else None
+    img = carrender.render(car, view, pl, int(w * dpr), plates=({} if board is not None else None if plates else {}),
                            plate_scale=PLATE_SCALE if plate_scale is None else plate_scale)
     target = QRectF(rect.center().x() - w / 2, rect.center().y() - h / 2, w, h)
     p.save()
@@ -126,14 +131,17 @@ def draw_real_car(p, rect, d, car, view="side", plates=True, plate_scale=None):
     p.setBrush(QColor(0, 0, 0, 60))
     p.drawEllipse(QRectF(target.x() + w * .04, target.bottom() - h * .08, w * .92, h * .12))
     p.drawImage(target, img)
+    if board is not None:
+        from . import board as bd
+        bd.paint_items(p, target, board.items, bd.palette_ns(pl), board.root, view, dpr=dpr)
     p.restore()
     return True
 
 
-def draw_car(p, rect, d, view="side", plates=True, plate_scale=None):
+def draw_car(p, rect, d, view="side", plates=True, plate_scale=None, layout=True):
     """The palette on the preview car (the built-in car unless another one is chosen), fitted into rect."""
     if PREVIEW_CAR is not None:
-        draw_real_car(p, rect, d, PREVIEW_CAR, view, plates, plate_scale)
+        draw_real_car(p, rect, d, PREVIEW_CAR, view, plates, plate_scale, layout)
 
 
 # ---------------------------------------------------------------------- cards

@@ -119,11 +119,20 @@ class MainWindow(QMainWindow):
         self.howto.openPage.connect(self.go)
         self.workshop.sendPalette.connect(self.palette_from_workshop)
         self.cars.carsChanged.connect(self.cars_changed)
+        self._layout_timer = QTimer(self)
+        self._layout_timer.setSingleShot(True)
+        self._layout_timer.setInterval(90)
+        self._layout_timer.timeout.connect(self._layout_changed)
+        use = self.workshop.board.use_layout
+        use.setChecked(self.settings.value("useLayout", False, type=bool))
+        use.toggled.connect(lambda on: self.settings.setValue("useLayout", on))
+        self.workshop.layoutChanged.connect(self._layout_timer.start)
+        self._layout_changed()
         self.cars.placementChanged.connect(self._repaint_previews)
         self.car_box.currentIndexChanged.connect(self._car_picked)
         self.wheel_box.currentIndexChanged.connect(self._wheels_picked)
         self.wheel_colour.currentIndexChanged.connect(self._wheels_picked)
-        self.paint_switches = [self.projects.paint, self.generator.paint, self.workshop.colours.paint]
+        self.paint_switches = [self.projects.paint, self.generator.paint, self.workshop.colours.paint, self.workshop.board.paint]
         for sw in self.paint_switches:
             sw.set_mode(carrender.PAINT)
             sw.changed.connect(self._paint_picked)
@@ -251,8 +260,8 @@ class MainWindow(QMainWindow):
         """The wheel boxes only matter for a car that comes without wheels (it has positions for them)."""
         car = self.car_box.currentData()
         on = bool(car is not None and car.data.get("wheels"))
-        self.wheel_box.setEnabled(on)
-        self.wheel_colour.setEnabled(on)
+        self.wheel_box.setVisible(on)
+        self.wheel_colour.setVisible(on)
 
     def _paint_picked(self, mode):
         """Gradient or solid colour: one choice for every preview, so all the switches follow it."""
@@ -274,8 +283,17 @@ class MainWindow(QMainWindow):
         self.projects.livery.update()
         self.generator.livery.update()
         self.workshop.colours.stage.update()
+        self.workshop.board.refresh_car()
         self.workshop.gradients.stage.update()
         self.projects.refresh_on_car()
+
+    def _layout_changed(self):
+        """The board the previews use (when ticked) or the plain sponsor plates, and a repaint of every preview."""
+        tab = self.workshop.board
+        render.LAYOUT = tab.board if tab.use_layout.isChecked() else None
+        if render.LAYOUT is not None or getattr(self, "_layout_was_on", False):
+            self._repaint_previews()
+        self._layout_was_on = render.LAYOUT is not None
 
     def cars_changed(self):
         cur = self.car_box.currentData()

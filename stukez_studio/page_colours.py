@@ -35,7 +35,7 @@ class Stage(QWidget):
         r = QRectF(self.rect()).adjusted(1, 1, -1, -1)
         render.draw_stage(p, r, cut=22)
         if self.pal is not None:
-            render.draw_car(p, r.adjusted(18, 14, -18, -8), self.pal, plate_scale=PLATE_SCALE)
+            render.draw_car(p, r.adjusted(18, 14, -18, -8), self.pal, plate_scale=PLATE_SCALE, layout=False)
 
 
 def mean_hex(v):

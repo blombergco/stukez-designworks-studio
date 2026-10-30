@@ -10,7 +10,7 @@ if (-not (Test-Path "assets\icon.ico")) { throw "assets\icon.ico was not created
 
 $excludes = "QtWebEngineCore","QtWebEngineWidgets","QtWebEngineQuick","QtQml","QtQuick","QtQuickWidgets","Qt3DCore","Qt3DRender",
             "QtMultimedia","QtMultimediaWidgets","QtCharts","QtDataVisualization","QtSql","QtTest","QtBluetooth","QtNfc","QtSensors",
-            "QtSerialPort","QtPdf","QtPdfWidgets","QtOpenGL","QtOpenGLWidgets","QtNetwork","QtDesigner","QtHelp","QtSvg","QtSvgWidgets",
+            "QtSerialPort","QtPdf","QtPdfWidgets","QtOpenGL","QtOpenGLWidgets","QtNetwork","QtDesigner","QtHelp","QtSvgWidgets",
             "QtRemoteObjects","QtPositioning","QtLocation","QtScxml","QtStateMachine","QtTextToSpeech","QtWebChannel","QtWebSockets"
 $exArgs = $excludes | ForEach-Object { "--exclude-module"; "PySide6.$_" }
 

@@ -21,7 +21,7 @@ program writes everything down as notes in your workspace folder, so nothing is 
 |---|---|---|
 | 1 | Make a palette: let the generator suggest one, or set the seven colours by hand. | [New project](page:1) |
 | 2 | Look at it on a car. Switch the car, and switch between gradient and solid paint. | Any preview |
-| 3 | Fine-tune the sponsor and outline colours, build a gradient, outline a logo. | [Workshop](page:6) |
+| 3 | Place sponsors and tribals on the car, fine-tune their colours, build a gradient, outline a logo. | [Workshop](page:6) |
 | 4 | Save. The program writes the project note, the swatches, a detail kit, a build sheet and a placement preview. | [New project](page:1) |
 | 5 | Open the project, check the real sponsor logos on your car, export for Illustrator or Substance Painter. | [Projects](page:0) |
 
@@ -76,14 +76,13 @@ The *Car paint* switch above the preview works here too, and *Export card (PNG)*
 
 The car on every preview is your **Preview car**: the box in the top right corner.
 
-* **Built in.** Twelve cars come with the program: S13 Silvia, S13 B-style, S13 Origin kit, 180SX Origin kit, S14 D-Max kit,
-  S15 Origin Raijin kit, S15 Raiji kit, ER34 Uras, JZX90 BN Sport, Galant, E36 Coupe and the S160 Junction Produce.
-* **Wheels.** Two of them come without wheels. For those, the two boxes next to the car choose the wheel (TE37, VS-KF) and
-  its colour. The other cars keep the wheels in their picture.
+* **Built in.** Two cars come with the program: the S13 Silvia and the S15 Origin Raijin kit. Both keep the wheels, windows
+  and lights of their picture; only the paint takes the livery.
 * **Your own cars.** On the [Cars](page:2) page, *Add a car* takes one car (side and top captures), and *Import a folder of
   cars* finds many at once. Your cars appear in the same box.
-* **Sponsor zones.** Each view has twelve zones where sponsors go. Drag a zone to move it, drag its dot to resize, right-click
-  to add or delete. The placement is saved with the car.
+* **Sponsor zones.** Each view of your own cars has twelve zones where the project's sponsor kit goes (the *On car* tab of a
+  project and the Illustrator template use them). Drag a zone to move it, drag its dot to resize, right-click to add or
+  delete. The placement is saved with the car. To try logos anywhere you like, use *Place on car* in the Workshop.
 
 Only the paint of the car takes the livery. Windows, wheels and lights keep their own colours.
 """),
@@ -91,6 +90,26 @@ Only the paint of the car takes the livery. Windows, wheels and lights keep thei
 # Workshop
 
 Small tools for making one part of a livery, outside a project. Open them from [Workshop](page:6).
+
+## Place on car
+
+Try a livery the way it will look: put the sponsors and tribals where you want them on the car.
+
+* **Add.** *Import logos* and *Import tribals* take PNG, SVG, WebP and JPG files (a plain white or black background is
+  removed for you). You can also drop files on the car, pick brands with *From the logo library*, or type a name with
+  *Add a name* when there is no logo yet.
+* **Move.** Drag a logo. Drag a corner to scale it, drag the round handle to turn it (hold Shift for steps of 15°), use the
+  arrow keys to nudge (Shift for bigger steps), Ctrl + wheel to scale, Delete to remove, Ctrl+Z to undo. Right-click for more.
+  A red line shows when a logo is on the middle of the car; hold Alt to move without snapping.
+* **Colour.** Every logo keeps its own colours, or takes Sponsor A, Sponsor B, the tribal or the base colour of the palette, or
+  any colour or 2-colour gradient. An outline is optional and follows the palette or any colour. *Give every logo of this kind
+  the same colour* copies the colour to the others.
+* **Palette and view.** The palette is the New project page or any saved project; the view is the side or the top view of the
+  Preview car (the S13 and S15 only have a side view). *Show sponsor zones* draws the zones of the car as a guide.
+* **Save.** The board is saved on its own as you work (*Project Library/Boards*). *New*, *Delete* and the box at the top
+  open other boards. *Save image* and *Copy image* export the car with its logos.
+* **Use it everywhere.** Tick *Use this board on all car previews* and every preview car (Projects, New project) shows your
+  logos and tribals in the colours of its own palette, in place of the small sponsor plates.
 
 ## Gradients
 
