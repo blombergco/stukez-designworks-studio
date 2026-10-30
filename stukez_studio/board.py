@@ -18,6 +18,7 @@ from PIL import Image
 from PySide6.QtCore import QPointF, QRectF, Qt
 from PySide6.QtGui import QColor, QFont, QFontDatabase, QFontMetrics, QImage, QPainter, QTransform
 
+from . import carrender
 from . import outlines as ol
 from . import palette as pal
 
@@ -343,6 +344,25 @@ def paint_items(p, T, items, pl, folder, view, selected=None, dpr=1.0):
     p.restore()
 
 
+def paint_car(p, target, car, view, pl, items=(), folder=None, dpr=1.0, plates=None, plate_scale=1.0, shadow=True):
+    """The car view drawn into rectangle `target`: a shadow under it, the palette on it, then the items of `view`.
+
+    `pl` is what carrender takes (a Proj or a palette namespace); the items get it as a palette namespace. `plates` goes to
+    carrender too (None = the sponsor plates, {} = none). A caller that must draw something between the car and its items
+    (the zone outlines) passes no items and calls paint_items itself."""
+    p.save()
+    p.setRenderHint(QPainter.SmoothPixmapTransform)
+    if shadow:
+        p.setPen(Qt.NoPen)
+        p.setBrush(QColor(0, 0, 0, 60))
+        p.drawEllipse(QRectF(target.x() + target.width() * .04, target.bottom() - target.height() * .08,
+                             target.width() * .92, target.height() * .12))
+    p.drawImage(target, carrender.render(car, view, pl, int(target.width() * dpr), plates=plates, plate_scale=plate_scale))
+    if items:
+        paint_items(p, target, items, palette_ns(pl), folder, view, dpr=dpr)
+    p.restore()
+
+
 # ---------------------------------------------------------------------- the board on disk
 def safe_name(name):
     return re.sub(r'[\\/:*?"<>|]', "-", name).strip(" .") or "Untitled"
@@ -466,16 +486,13 @@ def library_logos(vault):
 
 def render_scene(car, view, pl, items, folder, width, background=True):
     """The car with the items on it as a QImage `width` pixels wide (the car's own transparent background if background is False)."""
-    from . import carrender
     size = car.view_info(view)["size"]
     h = max(1, round(width * size[1] / size[0]))
     img = QImage(width, h, QImage.Format_ARGB32)
     img.fill(Qt.transparent)
     p = QPainter(img)
-    p.setRenderHint(QPainter.SmoothPixmapTransform)
     if background:
         p.fillRect(img.rect(), QColor("#E9E6E7"))
-    p.drawImage(QRectF(0, 0, width, h), carrender.render(car, view, pl, width, plates={}))
-    paint_items(p, QRectF(0, 0, width, h), items, pl, folder, view)
+    paint_car(p, QRectF(0, 0, width, h), car, view, pl, items, folder, plates={}, shadow=False)
     p.end()
     return img

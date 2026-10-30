@@ -5,7 +5,7 @@ from PySide6.QtCore import QPointF, QRectF, Qt
 from PySide6.QtGui import (QBrush, QColor, QImage, QLinearGradient, QPainter, QPainterPath, QPen,
                            QRadialGradient)
 
-from . import carrender
+from . import board as bd
 from . import theme as th
 from .theme import body_font, head_font
 
@@ -130,19 +130,11 @@ def draw_real_car(p, rect, d, car, view="side", plates=True, plate_scale=None, l
     w, h = min(rect.width(), rect.height() * ar), min(rect.height(), rect.width() / ar)
     pl = pal_of(d)
     board = LAYOUT if layout and not getattr(pl, "no_plates", False) and LAYOUT is not None and LAYOUT.items else None
-    img = carrender.render(car, view, pl, int(w * dpr), plates=({} if board is not None else None if plates else {}),
-                           plate_scale=PLATE_SCALE if plate_scale is None else plate_scale)
     target = QRectF(rect.center().x() - w / 2, rect.center().y() - h / 2, w, h)
-    p.save()
-    p.setRenderHint(QPainter.SmoothPixmapTransform)
-    p.setPen(Qt.NoPen)
-    p.setBrush(QColor(0, 0, 0, 60))
-    p.drawEllipse(QRectF(target.x() + w * .04, target.bottom() - h * .08, w * .92, h * .12))
-    p.drawImage(target, img)
-    if board is not None:
-        from . import board as bd
-        bd.paint_items(p, target, board.items, bd.palette_ns(pl), board.root, view, dpr=dpr)
-    p.restore()
+    items, folder = (board.items, board.root) if board is not None else ((), None)
+    bd.paint_car(p, target, car, view, pl, items, folder, dpr=dpr,
+                 plates=({} if board is not None else None if plates else {}),
+                 plate_scale=PLATE_SCALE if plate_scale is None else plate_scale)
     return True
 
 

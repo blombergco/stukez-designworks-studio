@@ -15,7 +15,7 @@ from PySide6.QtWidgets import (QCheckBox, QComboBox, QDialog, QFileDialog, QInpu
                                QMessageBox, QScrollArea, QSizePolicy, QVBoxLayout, QWidget)
 
 from . import board as bd
-from . import carrender, render
+from . import render
 from . import theme as th
 from .page_generator import SlotRow
 from .page_gradients import slider_row
@@ -117,11 +117,7 @@ class BoardCanvas(QWidget):
             return
         car = self.car()
         dpr = self.devicePixelRatioF()
-        p.setRenderHint(QPainter.SmoothPixmapTransform)
-        p.setPen(Qt.NoPen)
-        p.setBrush(QColor(0, 0, 0, 60))
-        p.drawEllipse(QRectF(T.x() + T.width() * .04, T.bottom() - T.height() * .08, T.width() * .92, T.height() * .12))
-        p.drawImage(T, carrender.render(car, self.view, self.pl, int(T.width() * dpr), plates={}))
+        bd.paint_car(p, T, car, self.view, self.pl, dpr=dpr, plates={})
         if self.show_zones:
             self._paint_zones(p, T, car)
         if self.board is not None:
