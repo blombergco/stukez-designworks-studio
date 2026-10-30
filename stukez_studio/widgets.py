@@ -107,7 +107,8 @@ class StudioButton(QPushButton):
         # surface
         if lit:
             g = QLinearGradient(r.topLeft(), r.topRight())
-            g.setColorAt(0, QColor(th.RED_HI if hot else th.RED))
+            # the text sits on the middle of the surface: the left edge starts darker so white text keeps 4.5:1
+            g.setColorAt(0, QColor(th.PRIMARY_END if hot else th.RED_DARK))
             g.setColorAt(1, QColor(th.PRIMARY_END_HOT if hot else th.PRIMARY_END))
             if not on:
                 g.setColorAt(0, QColor(th.OFF_TOP))
@@ -151,8 +152,6 @@ class StudioButton(QPushButton):
             edge = QColor(th.BORDER)
         p.setPen(QPen(edge, 1))
         p.drawPath(path)
-        if not lit and on:
-            render.slash_edges(p, r, c, th.accent(255 if hot else 150), 1.5)
         if self.hasFocus() and self._keys:
             p.setPen(QPen(QColor("#ffffff"), 1.5, Qt.DashLine))
             p.drawPath(chamfer_path(r.adjusted(-1.5, -1.5, 1.5, 1.5), c))
@@ -458,5 +457,4 @@ class EmptyState(QWidget):
         p.setPen(QPen(QColor(th.BORDER), 1))
         p.setBrush(th.alpha(th.PANEL, 120))
         p.drawPath(chamfer_path(r, 18))
-        render.slash_edges(p, r, 18, QColor(th.RED), 2)
         p.end()

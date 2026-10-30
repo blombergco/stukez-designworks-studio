@@ -205,7 +205,8 @@ def draw_card(p, rect, d, title, subtitle, selected=False, hover=False, number=N
     else:
         p.setPen(QPen(th.accent(120) if hover else QColor(255, 255, 255, 22), 1))
         p.drawPath(chamfer_path(rect.adjusted(.5, .5, -.5, -.5), cut))
-        slash_edges(p, rect.adjusted(.5, .5, -.5, -.5), cut, th.accent(230 if hover else 130), 1.6)
+        if hover:    # the slash shows on the card under the pointer only; at rest the cards carry no red
+            slash_edges(p, rect.adjusted(.5, .5, -.5, -.5), cut, th.accent(230), 1.6)
     p.restore()
 
 
