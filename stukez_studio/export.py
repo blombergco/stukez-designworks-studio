@@ -1,6 +1,5 @@
 """Export package: everything the vault holds about one project in a single ZIP."""
 import zipfile
-from pathlib import Path
 
 
 def project_files(vault, p):

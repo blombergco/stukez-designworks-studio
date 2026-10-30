@@ -6,14 +6,14 @@ import tempfile
 from PySide6.QtCore import (QAbstractListModel, QModelIndex, QRectF, QSize, QSortFilterProxyModel, Qt, Signal)
 from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import (QAbstractItemView, QApplication, QComboBox, QFileDialog, QHBoxLayout, QLabel, QLineEdit,
-                               QListView, QListWidget, QListWidgetItem, QMenu, QMessageBox, QPushButton, QScrollArea,
+                               QListView, QListWidget, QListWidgetItem, QMenu, QMessageBox, QScrollArea,
                                QSplitter, QStyle, QStyledItemDelegate, QTabWidget, QVBoxLayout, QWidget)
 
 from . import export, render
 from .backend import write_ase
 from .oncar import render_placement
 from .templates import export_template
-from .widgets import ChipGrid, LiveryPreview, NoteView, StudioButton, button, copy_text, label, pill, run_build
+from .widgets import ChipGrid, LiveryPreview, NoteView, PaintSwitch, StudioButton, button, copy_text, label, pill, run_build
 
 
 class OnCarTab(QWidget):
@@ -198,6 +198,7 @@ class ProjectsPage(QWidget):
         self.badges = QHBoxLayout()
         self.concept = label("", "muted", wrap=True)
         self.livery = LiveryPreview(210, plates=False)
+        self.paint = PaintSwitch()
         self.chips = ChipGrid()
         self.chips.copied.connect(lambda n: self.status.emit(f"Copied {n}"))
         actions = QHBoxLayout()
@@ -240,6 +241,7 @@ class ProjectsPage(QWidget):
         self.badges.setContentsMargins(0, 0, 0, 0)
         rl.addWidget(hb)
         rl.addWidget(self.concept)
+        rl.addWidget(self.paint)
         rl.addWidget(self.livery)
         rl.addWidget(self.chips)
         rl.addLayout(actions)

@@ -4,7 +4,6 @@ The vault stays the source of truth. Project notes are created with Project Libr
 prompt colour paragraphs come from colouroptions.py and sponsor matching from dblib.py, so the app and
 Obsidian always agree on rules and data.
 """
-import json
 import os
 import re
 import struct
@@ -55,11 +54,11 @@ class Proj:
     week: int
     base: object
     tribal: object
-    tribal_outline: str
+    tribal_outline: object
     sponsor_a: object
-    sponsor_a_outline: str
+    sponsor_a_outline: object
     sponsor_b: object
-    sponsor_b_outline: str
+    sponsor_b_outline: object
     folder: Path = None
     note: Path = None
     concept: str = ""
@@ -135,8 +134,8 @@ class Vault:
             vocab[m.group(1).split(" (")[0].strip()] = re.sub(r"\[\[(?:[^\]|]*\\?\|)?([^\]]+)\]\]", r"\1", m.group(2))
         return Proj(int(fm["id"]), fm["name"], fm.get("platform", ""), fm.get("status", "palette"),
                     str(fm.get("created", "")), list(fm.get("moods", [])), list(fm.get("motifs", [])),
-                    int(fm.get("week", 0) or 0), t(fm["base"]), t(fm["tribal"]), fm["tribal_outline"],
-                    t(fm["sponsor_a"]), fm["sponsor_a_outline"], t(fm["sponsor_b"]), fm["sponsor_b_outline"],
+                    int(fm.get("week", 0) or 0), t(fm["base"]), t(fm["tribal"]), t(fm["tribal_outline"]),
+                    t(fm["sponsor_a"]), t(fm["sponsor_a_outline"]), t(fm["sponsor_b"]), t(fm["sponsor_b_outline"]),
                     folder=f.parent, note=f, concept=concept, vocab=vocab)
 
     def project_files(self, p):
@@ -191,8 +190,8 @@ class Vault:
         """Build a projectkit Project from a plain dict (the generator's output)."""
         t = lambda v: tuple(v) if isinstance(v, list) else v
         return self.pk.P(pid or self.next_id(), d["name"], d.get("concept", "") or "New palette.", t(d["base"]),
-                         t(d["tribal"]), d["tribal_outline"], t(d["sponsor_a"]), d["sponsor_a_outline"],
-                         t(d["sponsor_b"]), d["sponsor_b_outline"], platform=d.get("platform", ""),
+                         t(d["tribal"]), t(d["tribal_outline"]), t(d["sponsor_a"]), t(d["sponsor_a_outline"]),
+                         t(d["sponsor_b"]), t(d["sponsor_b_outline"]), platform=d.get("platform", ""),
                          moods=d.get("moods", ()))
 
     def save_project(self, d):

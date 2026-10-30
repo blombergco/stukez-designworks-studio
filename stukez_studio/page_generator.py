@@ -9,11 +9,11 @@ from PySide6.QtWidgets import (QCheckBox, QColorDialog, QComboBox, QFileDialog, 
 
 from . import palette as pal
 from . import render
-from .widgets import ChipGrid, LiveryPreview, StudioButton, button, copy_text, label, run_build
+from .widgets import ChipGrid, LiveryPreview, PaintSwitch, StudioButton, button, copy_text, label, run_build
 
-SLOTS = [("base", "Base", True), ("tribal", "Tribals", True), ("tribal_outline", "Tribal outline", False),
-         ("sponsor_a", "Sponsor A", True), ("sponsor_a_outline", "Sponsor A outline", False),
-         ("sponsor_b", "Sponsor B", True), ("sponsor_b_outline", "Sponsor B outline", False)]
+SLOTS = [("base", "Base", True), ("tribal", "Tribals", True), ("tribal_outline", "Tribal outline", True),
+         ("sponsor_a", "Sponsor A", True), ("sponsor_a_outline", "Sponsor A outline", True),
+         ("sponsor_b", "Sponsor B", True), ("sponsor_b_outline", "Sponsor B outline", True)]
 
 
 class ColourButton(QPushButton):
@@ -170,7 +170,7 @@ class GeneratorPage(QWidget):
         seed.addStretch()
         form.addLayout(seed)
         form.addWidget(gen)
-        form.addWidget(label("Colours (hex codes only, outlines are single colours)", "h2"))
+        form.addWidget(label("Colours (hex codes only, every slot is a solid colour or a 2-colour gradient)", "h2"))
         form.addLayout(rows_lay)
         form.addWidget(label("Platform and concept", "h2"))
         form.addWidget(self.platform)
@@ -188,6 +188,7 @@ class GeneratorPage(QWidget):
 
         # --- preview
         self.livery = LiveryPreview(300)
+        self.paint = PaintSwitch()
         self.chips = ChipGrid()
         self.chips.copied.connect(lambda n: self.status.emit(f"Copied {n}"))
         self.problem = label("", "muted", wrap=True)
@@ -203,6 +204,7 @@ class GeneratorPage(QWidget):
         right = QVBoxLayout()
         right.setContentsMargins(10, 0, 0, 0)
         right.addWidget(label("Preview", "h2"))
+        right.addWidget(self.paint)
         right.addWidget(self.livery, 1)
         right.addWidget(self.chips)
         right.addWidget(self.problem)

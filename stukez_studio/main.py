@@ -7,12 +7,14 @@ from PySide6.QtGui import QAction, QColor, QIcon, QKeySequence, QLinearGradient,
 from PySide6.QtWidgets import (QApplication, QButtonGroup, QComboBox, QDialog, QFileDialog, QHBoxLayout, QLabel, QMainWindow,
                                QMessageBox, QStackedWidget, QVBoxLayout, QWidget)
 
-from . import __channel__, __version_label__, __version__, carrender, render
+from . import __channel__, __version_label__, carrender, render
 from .backend import Vault, find_vault, looks_like_vault
-from .cars import builtin_car
+from .cars import builtin_cars
+from . import wheels
 from .page_cars import CarsPage
 from .page_generator import GeneratorPage
 from .page_guides import GuidesPage
+from .page_howto import HowToPage
 from .page_projects import ProjectsPage
 from .page_prompts import PromptsPage
 from .page_sponsors import SponsorsPage
@@ -24,10 +26,10 @@ from .update_ui import UpdateController
 from .welcome import LicencesDialog, WelcomeDialog
 from . import updates
 from . import workspace
-from .theme import build_qss
+from .theme import build_qss, install_cut_frames
 
 PAGES = [("Projects", "projects"), ("New project", "new"), ("Cars", "cars"), ("Prompts", "prompts"), ("Sponsors", "sponsors"), ("Guides", "guides"),
-         ("Workshop", "workshop")]
+         ("Workshop", "workshop"), ("How to", "howto")]
 
 
 def app_icon():
@@ -57,6 +59,19 @@ class MainWindow(QMainWindow):
         self.resize(1680, 980)
 
         self.car_box = QComboBox()
+        self.wheel_box, self.wheel_colour = QComboBox(), QComboBox()
+        self.wheel_box.addItem("Wheels: the car's own", "")
+        for key, title in wheels.DESIGNS.items():
+            self.wheel_box.addItem(title, key)
+        self.wheel_box.addItem("No wheels", "none")
+        self.wheel_colour.addItem("Wheel colour: default", "")
+        for key in wheels.COLOURS:
+            self.wheel_colour.addItem(key.capitalize(), key)
+        for box, name in ((self.wheel_box, "wheelDesign"), (self.wheel_colour, "wheelColour")):
+            i = box.findData(self.settings.value(name, ""))
+            box.setCurrentIndex(max(0, i))
+        carrender.WHEEL_CHOICE = (self.wheel_box.currentData(), self.wheel_colour.currentData())
+        carrender.PAINT = self.settings.value("paint", "") if self.settings.value("paint", "") in ("base", "tribal") else ""
         self._restore_car()
         self.projects = ProjectsPage(vault)
         self.generator = GeneratorPage(vault)
@@ -64,8 +79,9 @@ class MainWindow(QMainWindow):
         self.prompts = PromptsPage(vault, self.generator.palette)
         self.sponsors = SponsorsPage(vault)
         self.guides = GuidesPage(vault, lambda: {p.title: p.id for p in vault.projects()})
-        self.workshop = WorkshopPage(vault)
-        pages = [self.projects, self.generator, self.cars, self.prompts, self.sponsors, self.guides, self.workshop]
+        self.workshop = WorkshopPage(vault, self.generator.palette)
+        self.howto = HowToPage()
+        pages = [self.projects, self.generator, self.cars, self.prompts, self.sponsors, self.guides, self.workshop, self.howto]
         self.stack = QStackedWidget()
         for p in pages:
             self.stack.addWidget(p)
@@ -100,9 +116,17 @@ class MainWindow(QMainWindow):
         self.generator.saved.connect(self.project_saved)
         self.guides.openProject.connect(self.open_project)
         self.workshop.sendToProject.connect(self.slot_from_workshop)
+        self.howto.openPage.connect(self.go)
+        self.workshop.sendPalette.connect(self.palette_from_workshop)
         self.cars.carsChanged.connect(self.cars_changed)
         self.cars.placementChanged.connect(self._repaint_previews)
         self.car_box.currentIndexChanged.connect(self._car_picked)
+        self.wheel_box.currentIndexChanged.connect(self._wheels_picked)
+        self.wheel_colour.currentIndexChanged.connect(self._wheels_picked)
+        self.paint_switches = [self.projects.paint, self.generator.paint, self.workshop.colours.paint]
+        for sw in self.paint_switches:
+            sw.set_mode(carrender.PAINT)
+            sw.changed.connect(self._paint_picked)
         self._corner = QWidget()
         cl2 = QHBoxLayout(self._corner)
         cl2.setContentsMargins(0, 0, 10, 0)
@@ -110,6 +134,8 @@ class MainWindow(QMainWindow):
         tag.setObjectName("muted")
         cl2.addWidget(tag)
         cl2.addWidget(self.car_box)
+        cl2.addWidget(self.wheel_box)
+        cl2.addWidget(self.wheel_colour)
         self.menuBar().setCornerWidget(self._corner, Qt.TopRightCorner)
         self.updater = UpdateController(self)
         self.updater.available.connect(self._update_available)
@@ -165,6 +191,12 @@ class MainWindow(QMainWindow):
         self.go(1)
         self.flash(f"Gradient {value[0]} → {value[1]} is now in the {key.replace('_', ' ')} slot of the new project")
 
+    def palette_from_workshop(self, slots):
+        for key, value in slots.items():
+            self.generator.apply_slot(key, value)
+        self.go(1)
+        self.flash("The sponsor and outline colours are now in the new project")
+
     def back_up(self):
         ok, text = backup.status(self.vault.root)
         if not ok:
@@ -197,9 +229,8 @@ class MainWindow(QMainWindow):
         want = keep if keep is not None else self.settings.value("previewCar", "")
         self.car_box.blockSignals(True)
         self.car_box.clear()
-        builtin = builtin_car()
-        if builtin is not None:
-            self.car_box.addItem(builtin.name, builtin)
+        for b in builtin_cars():
+            self.car_box.addItem(b.name, b)
         for c in self.vault.cars().cars():
             self.car_box.addItem(c.name, c)
         # the saved car if it still exists, otherwise the first entry (the built-in car)
@@ -207,17 +238,43 @@ class MainWindow(QMainWindow):
         self.car_box.setCurrentIndex(i)
         self.car_box.blockSignals(False)
         render.set_preview_car(self.car_box.currentData())
+        self._wheel_controls()
 
     def _car_picked(self, _i):
         car = self.car_box.currentData()
         render.set_preview_car(car)
         self.settings.setValue("previewCar", car.id if car else "")
+        self._wheel_controls()
+        self._repaint_previews()
+
+    def _wheel_controls(self):
+        """The wheel boxes only matter for a car that comes without wheels (it has positions for them)."""
+        car = self.car_box.currentData()
+        on = bool(car is not None and car.data.get("wheels"))
+        self.wheel_box.setEnabled(on)
+        self.wheel_colour.setEnabled(on)
+
+    def _paint_picked(self, mode):
+        """Gradient or solid colour: one choice for every preview, so all the switches follow it."""
+        carrender.PAINT = mode
+        self.settings.setValue("paint", mode)
+        for sw in self.paint_switches:
+            sw.set_mode(mode)
+        self._repaint_previews()
+
+    def _wheels_picked(self, _i):
+        carrender.WHEEL_CHOICE = (self.wheel_box.currentData(), self.wheel_colour.currentData())
+        self.settings.setValue("wheelDesign", self.wheel_box.currentData())
+        self.settings.setValue("wheelColour", self.wheel_colour.currentData())
+        carrender.clear_cache()
         self._repaint_previews()
 
     def _repaint_previews(self):
         self.projects.view.viewport().update()
         self.projects.livery.update()
         self.generator.livery.update()
+        self.workshop.colours.stage.update()
+        self.workshop.gradients.stage.update()
         self.projects.refresh_on_car()
 
     def cars_changed(self):
@@ -287,6 +344,7 @@ def main():
     app = QApplication(sys.argv)
     app.setApplicationName("StukeZ Designworks Studio")
     app.setStyleSheet(build_qss())
+    install_cut_frames(app)
     app.setWindowIcon(app_icon())
     settings = QSettings("KaizenCave", "KaizenStudio")
     root = choose_vault(settings)

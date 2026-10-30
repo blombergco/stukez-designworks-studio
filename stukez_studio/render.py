@@ -6,7 +6,6 @@ from PySide6.QtGui import (QBrush, QColor, QImage, QLinearGradient, QPainter, QP
                            QRadialGradient)
 
 from . import carrender
-from .palette import text_on
 from .theme import body_font, head_font
 
 PANEL = QColor("#130a0d")
@@ -110,7 +109,7 @@ def set_preview_car(car):
     PREVIEW_CAR = car
 
 
-def draw_real_car(p, rect, d, car, view="side", plates=True):
+def draw_real_car(p, rect, d, car, view="side", plates=True, plate_scale=None):
     """The palette on a real car capture, fitted into rect; returns False when the car lacks that view."""
     dpr = p.device().devicePixelRatioF() if p.device() else 1.0
     src = car.view_info(view)["size"] if view in car.views() else None
@@ -118,7 +117,8 @@ def draw_real_car(p, rect, d, car, view="side", plates=True):
         return False
     ar = src[0] / src[1]
     w, h = min(rect.width(), rect.height() * ar), min(rect.height(), rect.width() / ar)
-    img = carrender.render(car, view, pal_of(d), int(w * dpr), plates=None if plates else {}, plate_scale=PLATE_SCALE)
+    img = carrender.render(car, view, pal_of(d), int(w * dpr), plates=None if plates else {},
+                           plate_scale=PLATE_SCALE if plate_scale is None else plate_scale)
     target = QRectF(rect.center().x() - w / 2, rect.center().y() - h / 2, w, h)
     p.save()
     p.setRenderHint(QPainter.SmoothPixmapTransform)
@@ -130,10 +130,10 @@ def draw_real_car(p, rect, d, car, view="side", plates=True):
     return True
 
 
-def draw_car(p, rect, d, view="side", plates=True):
+def draw_car(p, rect, d, view="side", plates=True, plate_scale=None):
     """The palette on the preview car (the built-in car unless another one is chosen), fitted into rect."""
     if PREVIEW_CAR is not None:
-        draw_real_car(p, rect, d, PREVIEW_CAR, view, plates)
+        draw_real_car(p, rect, d, PREVIEW_CAR, view, plates, plate_scale)
 
 
 # ---------------------------------------------------------------------- cards

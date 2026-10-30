@@ -6,8 +6,9 @@ colour tiles, the navigation rail and the headings. Everything else stays quiet.
 import tempfile
 from pathlib import Path
 
-from PySide6.QtCore import QPointF, Qt
-from PySide6.QtGui import QColor, QFontDatabase, QImage, QPainter, QPen, QPolygonF
+from PySide6.QtCore import QEvent, QObject, QPoint, QPointF, QRectF, Qt
+from PySide6.QtGui import QColor, QFontDatabase, QImage, QPainter, QPen, QPolygon, QPolygonF, QRegion
+from PySide6.QtWidgets import QComboBox, QLineEdit, QWidget
 
 BG = "#080506"          # tyre black (a hair of red)
 BG_DEEP = "#050304"     # rail, menu and status bar
@@ -72,14 +73,17 @@ def _icons():
         p.setPen(QPen(QColor("#ffffff"), 2.2, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
         p.drawPolyline(QPolygonF([QPointF(3.5, 8.3), QPointF(6.6, 11.4), QPointF(12.6, 4.6)]))
 
-    def chevron(color):
+    def chevron(color, points):
         def draw(p):
             p.setPen(QPen(QColor(color), 1.8, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
-            p.drawPolyline(QPolygonF([QPointF(2, 4), QPointF(6, 8), QPointF(10, 4)]))
+            p.drawPolyline(QPolygonF([QPointF(x, y) for x, y in points]))
         return draw
 
-    return dict(tick=make("tick.png", 16, tick), chev=make("chev.png", 12, chevron("#d9c7ca")),
-                )
+    down = ((2, 4), (6, 8), (10, 4))
+    right = ((4, 2), (8, 6), (4, 10))
+    return dict(tick=make("tick.png", 16, tick),
+                chev=make("chev.png", 12, chevron("#d9c7ca", down)),
+                right=make("chev_right.png", 12, chevron("#d9c7ca", right)))
 
 
 def build_qss():
@@ -100,7 +104,7 @@ QLabel#badge {{ background: rgba(255, 46, 63, 0.14); border: none; border-left: 
 
 /* ------------------------------------------------------------ inputs */
 QLineEdit, QPlainTextEdit, QComboBox, QSpinBox, QTextBrowser, QListView, QTreeWidget, QTableWidget, QListWidget {{
-    background: rgba(19, 10, 13, 0.94); border: 1px solid {BORDER}; border-bottom: 2px solid {BORDER_HI}; border-radius: 3px;
+    background: rgba(19, 10, 13, 0.94); border: 1px solid {BORDER}; border-bottom: 2px solid {BORDER_HI}; border-radius: 0;
     padding: 6px 10px; selection-background-color: {SELECT}; selection-color: #ffffff; }}
 QLineEdit:hover, QComboBox:hover {{ border-color: {BORDER_HI}; }}
 QLineEdit:focus, QPlainTextEdit:focus, QComboBox:focus {{ border: 1px solid {RED_DARK}; border-bottom: 2px solid {RED}; background: rgba(28, 13, 17, 0.97); }}
@@ -183,7 +187,64 @@ QSlider::handle:horizontal:hover {{ background: {EMBER}; }}
 QProgressBar {{ border: 1px solid {BORDER_HI}; border-radius: 3px; background: {PANEL}; text-align: center; min-height: 16px; }}
 QProgressBar::chunk {{ background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 {RED_DARK}, stop:1 {RED}); border-radius: 2px; }}
 QScrollArea {{ background: transparent; border: none; }}
+
+/* tree: the open and closed chevrons are the cut-plate arrows, the category rows read as headings */
+QTreeWidget::branch {{ background: transparent; }}
+QTreeWidget::branch:has-children:!has-siblings:closed, QTreeWidget::branch:closed:has-children:has-siblings {{ image: url({ic['right']}); }}
+QTreeWidget::branch:open:has-children:!has-siblings, QTreeWidget::branch:open:has-children:has-siblings {{ image: url({ic['chev']}); }}
+QTreeWidget::item {{ padding: 4px 4px; }}
 """
+
+
+class _CutEdges(QWidget):
+    """The two cut edges of an input, drawn over it: a stylesheet cannot draw a 45 degree corner."""
+
+    def __init__(self, host):
+        super().__init__(host)
+        self.setAttribute(Qt.WA_TransparentForMouseEvents)
+
+    def paintEvent(self, _e):
+        from . import render   # render imports this module, so the import waits until a widget paints
+        host = self.parent()
+        p = QPainter(self)
+        p.setRenderHint(QPainter.Antialiasing)
+        col = QColor(RED) if host.hasFocus() else QColor(BORDER_HI if host.underMouse() else BORDER)
+        render.slash_edges(p, QRectF(self.rect()).adjusted(.5, .5, -.5, -.5), host.property("cutSize"), col, 1.4)
+        p.end()
+
+
+class CutFrames(QObject):
+    """Cuts the top right and bottom left corners of every line edit and combo box, like the Studio buttons.
+
+    Each input gets a mask (the corners are clipped away) and a transparent child that draws the two cut edges on top.
+    A line edit inside an editable combo box is left alone: the combo box itself is cut.
+    """
+
+    def eventFilter(self, obj, e):
+        if not isinstance(obj, (QLineEdit, QComboBox)) or (isinstance(obj, QLineEdit) and isinstance(obj.parent(), QComboBox)):
+            return False
+        t = e.type()
+        if t == QEvent.Polish and obj.property("cutSize") is None:
+            obj.setProperty("cutSize", 0.0)
+            _CutEdges(obj)
+        elif t == QEvent.Resize and obj.property("cutSize") is not None:
+            w, h = obj.width(), obj.height()
+            c = round(min(h * .3, 9.0))
+            obj.setProperty("cutSize", float(c))
+            obj.setMask(QRegion(QPolygon([QPoint(0, 0), QPoint(w - c, 0), QPoint(w, c), QPoint(w, h), QPoint(c, h), QPoint(0, h - c)])))
+            edges = obj.findChild(_CutEdges)
+            edges.setGeometry(obj.rect())
+            edges.raise_()
+        elif t in (QEvent.FocusIn, QEvent.FocusOut, QEvent.Enter, QEvent.Leave) and obj.property("cutSize") is not None:
+            obj.findChild(_CutEdges).update()
+        return False
+
+
+def install_cut_frames(app):
+    """Call once after the stylesheet is set: every line edit and combo box in the program gets the cut."""
+    cut = CutFrames(app)
+    app.installEventFilter(cut)
+    return cut
 
 
 NOTE_CSS = f"""

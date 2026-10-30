@@ -1,9 +1,9 @@
 """Prompts page: browse the Gemini prompt library and recolour any prompt with a project's palette."""
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtWidgets import (QComboBox, QHBoxLayout, QLineEdit, QPlainTextEdit, QSplitter, QTreeWidget,
+from PySide6.QtWidgets import (QComboBox, QHBoxLayout, QLineEdit, QPlainTextEdit, QSplitter, QStackedWidget, QTreeWidget,
                                QTreeWidgetItem, QVBoxLayout, QWidget)
 
-from .widgets import ChipGrid, button, copy_text, label, pill
+from .widgets import ChipGrid, EmptyState, button, copy_text, label, pill
 
 
 class PromptsPage(QWidget):
@@ -42,8 +42,12 @@ class PromptsPage(QWidget):
         self.chips.setVisible(False)
         self.text = QPlainTextEdit()
         self.text.setReadOnly(True)
-        self.text.setStyleSheet("font-family: Consolas; font-size: 13px;")
-        self.text.setPlaceholderText("Pick a prompt in the list. Its text shows up here, ready to copy.")
+        self.text.setStyleSheet("font-family: Consolas; font-size: 14px; padding: 14px 18px; color: #e9dfe1;")
+        self.empty = EmptyState("No prompt yet",
+                                "Pick one in the list on the left. Its text appears here, ready to copy, in the colour version you choose above.")
+        self.view = QStackedWidget()
+        self.view.addWidget(self.empty)
+        self.view.addWidget(self.text)
         self.copy_btn = button("Copy prompt", True, self.copy)
         self.copy_btn.setMinimumHeight(40)
         self.meta = label("", "muted", wrap=True)
@@ -59,7 +63,7 @@ class PromptsPage(QWidget):
         rl.addWidget(label("Colour version", "h2"))
         rl.addWidget(self.palette_box)
         rl.addWidget(self.chips)
-        rl.addWidget(self.text, 1)
+        rl.addWidget(self.view, 1)
         rl.addWidget(self.meta)
         rl.addWidget(self.copy_btn)
 
@@ -195,6 +199,7 @@ class PromptsPage(QWidget):
         if proj is not None:
             self.chips.set_palette(proj)
         self.text.setPlainText(txt)
+        self.view.setCurrentWidget(self.text)
         self.meta.setText(f"{len(txt)} characters · from {self.item['path'].name}")
 
     def copy(self):

@@ -1,6 +1,6 @@
-"""Outlines for sponsor logos: a single-colour contour around any logo, as separate layers.
+"""Outlines for sponsor logos: a contour in one colour or a 2-colour gradient around any logo, as separate layers.
 
-The Project Library rule is that every outline is one colour, so a logo is given one contour in one hex colour. The result
+A logo is given one contour in one hex colour, or a left-to-right gradient of two (as a project outline can be). The result
 comes as three layers (the contour on its own, the contour with the logo on top, and a solid cut plate) plus a layered SVG
 for Illustrator. Contours are pixel based: for a true vector contour use Offset Path on the plate in Illustrator.
 """
@@ -22,6 +22,7 @@ DEFAULT_OUTLINE = "#0C0A14"
 @dataclass
 class Spec:
     colour: str = DEFAULT_OUTLINE
+    colour2: str = ""       # a second hex makes the contour a left-to-right gradient
     thickness: int = 12     # pixels of the original logo
     gap: int = 0            # clear space between the logo and the contour
     join: int = 0           # bridge gaps up to this size, so letters become one shape
@@ -103,6 +104,19 @@ def _alpha_from_mask(mask, size):
     return np.clip((arr - 127.5) * 3 + 127.5, 0, 255).astype(np.uint8)
 
 
+def _contour_rgb(spec, W, H):
+    """(H, W, 3) uint8 colours of the contour: one flat colour, or a gradient from `colour` on the left to `colour2` on the right."""
+    c0 = np.array([int(spec.colour[i:i + 2], 16) for i in (1, 3, 5)], np.float32)
+    out = np.empty((H, W, 3), np.uint8)
+    if not spec.colour2:
+        out[:] = c0.astype(np.uint8)
+        return out
+    c1 = np.array([int(spec.colour2[i:i + 2], 16) for i in (1, 3, 5)], np.float32)
+    t = np.linspace(0, 1, W, dtype=np.float32)[:, None]
+    out[:] = (c0 * (1 - t) + c1 * t).astype(np.uint8)[None, :, :]
+    return out
+
+
 def make(img, spec):
     """Return dict(outline, combined, plate, size): RGBA images the size of the logo plus room for the contour."""
     reach = spec.gap + spec.thickness
@@ -123,7 +137,7 @@ def make(img, spec):
     if spec.round_corners:
         outer = _smooth(outer, max(.0, thick * .22))
     ring = outer & ~inner
-    rgb = tuple(int(spec.colour[i:i + 2], 16) for i in (1, 3, 5))
+    rgb = _contour_rgb(spec, W, H)
     out = np.zeros((H, W, 4), np.uint8)
     out[..., :3] = rgb
     out[..., 3] = _alpha_from_mask(ring, (W, H))

@@ -3,7 +3,7 @@ import random
 from types import SimpleNamespace
 
 from PySide6.QtCore import QRectF, QSize, Qt, Signal
-from PySide6.QtGui import QColor, QFont, QIcon, QLinearGradient, QPainter, QPen, QPixmap
+from PySide6.QtGui import QColor, QIcon, QLinearGradient, QPainter, QPen, QPixmap
 from PySide6.QtWidgets import (QFileDialog, QGridLayout, QHBoxLayout, QLineEdit, QListWidget, QListWidgetItem, QMenu, QScrollArea,
                                QSlider, QVBoxLayout, QWidget)
 
@@ -12,7 +12,7 @@ from . import palette as pal
 from . import render
 from .page_generator import ColourButton
 from .theme import head_font
-from .widgets import StudioButton, button, copy_text, label
+from .widgets import EmptyState, StudioButton, button, copy_text, label
 
 OUTLINE = "#0C0A14"
 
@@ -249,7 +249,8 @@ class GradientsTab(QWidget):
         use = StudioButton("Use in New project ▾")
         use.setToolTip("Send the two colours to a slot of the New project page")
         menu = QMenu(use)
-        for key, text in (("base", "Base"), ("tribal", "Tribals"), ("sponsor_a", "Sponsor A"), ("sponsor_b", "Sponsor B")):
+        for key, text in (("base", "Base"), ("tribal", "Tribals"), ("tribal_outline", "Tribal outline"), ("sponsor_a", "Sponsor A"),
+                          ("sponsor_a_outline", "Sponsor A outline"), ("sponsor_b", "Sponsor B"), ("sponsor_b_outline", "Sponsor B outline")):
             menu.addAction(text, lambda k=key: self.sendToProject.emit(k, [self.a(), self.b()]))
         use.setMenu(menu)
         fav_actions = QHBoxLayout()
@@ -263,6 +264,9 @@ class GradientsTab(QWidget):
         right.addWidget(self.strip)
         right.addWidget(self.note)
         right.addWidget(label("Favourites", "h2"))
+        self.fav_empty = EmptyState("No favourites yet",
+                                    "Name a pair of colours above and press Save to favourites. Saved gradients are listed here.")
+        right.addWidget(self.fav_empty, 1)
         right.addWidget(self.list)
         right.addLayout(fav_actions)
 
@@ -328,7 +332,7 @@ class GradientsTab(QWidget):
             return
         g = self.gradient()
         ns = SimpleNamespace(base=g.a, tribal=g.b, tribal_outline=OUTLINE, sponsor_a="#F5F0F1", sponsor_a_outline=OUTLINE,
-                             sponsor_b="#F5F0F1", sponsor_b_outline=OUTLINE, no_plates=True,
+                             sponsor_b="#F5F0F1", sponsor_b_outline=OUTLINE, no_plates=True, paint="",
                              cut_angle=g.angle, cut_pos=g.pos, cut_span=g.span)
         self.stage.set_palette(ns)
         self.strip.set_colours(g.a, g.b)
@@ -348,6 +352,9 @@ class GradientsTab(QWidget):
             it.setData(Qt.UserRole, g)
             it.setToolTip(f"{g.hex_line()}   {g.angle:g}°")
             self.list.addItem(it)
+        empty = self.list.count() == 0
+        self.list.setVisible(not empty)
+        self.fav_empty.setVisible(empty)
 
     def _load_item(self, it):
         g = it.data(Qt.UserRole)

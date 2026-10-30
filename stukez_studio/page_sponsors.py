@@ -1,7 +1,7 @@
 """Sponsors page: the Drift Sponsor Database, filterable by build (chassis + engine)."""
 from datetime import date
 
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import Signal
 from PySide6.QtGui import QBrush, QColor
 from PySide6.QtWidgets import (QAbstractItemView, QCheckBox, QComboBox, QHBoxLayout, QHeaderView, QLineEdit, QSplitter,
                                QTableWidget, QTableWidgetItem, QVBoxLayout, QWidget)

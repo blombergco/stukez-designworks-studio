@@ -1,13 +1,13 @@
 """Shared widgets: the cut buttons and headings, note viewer, colour tiles, preview stage and progress helper."""
 from PySide6.QtCore import QEasingCurve, QPointF, QRectF, Qt, QVariantAnimation, Signal
-from PySide6.QtGui import QColor, QDesktopServices, QGuiApplication, QLinearGradient, QPainter, QPainterPath, QPen, QPolygonF
-from PySide6.QtWidgets import (QApplication, QHBoxLayout, QLabel, QMessageBox, QProgressDialog, QPushButton, QSizePolicy,
-                               QTextBrowser, QWidget)
+from PySide6.QtGui import QColor, QDesktopServices, QGuiApplication, QLinearGradient, QPainter, QPen, QPolygonF
+from PySide6.QtWidgets import (QApplication, QButtonGroup, QHBoxLayout, QLabel, QMessageBox, QProgressDialog, QPushButton, QVBoxLayout,
+                               QSizePolicy, QTextBrowser, QWidget)
 
 from . import render
 from .render import chamfer_path
 
-from .theme import ACCENT, EMBER, INK, MUTED, NOTE_CSS, RED, RED_DARK, RED_HI  # noqa: F401
+from .theme import ACCENT, BORDER, EMBER, INK, MUTED, NOTE_CSS, RED, RED_DARK, RED_HI  # noqa: F401
 
 
 def copy_text(text):
@@ -164,6 +164,37 @@ def button(text, primary=False, slot=None):
     if slot:
         b.clicked.connect(slot)
     return b
+
+
+class PaintSwitch(QWidget):
+    """Gradient or solid colour: how the car is painted in every preview. One state for the whole program (see MainWindow)."""
+    changed = Signal(str)       # "" = the gradient (the livery cut), "base" or "tribal" = one solid colour
+    MODES = (("Gradient", "", "The livery as designed: the base colour fades into the tribal colour over the car"),
+             ("Solid base", "base", "The whole car in one flat colour: the base colour (the first one, if the base is a gradient)"),
+             ("Solid tribals", "tribal", "The whole car in one flat colour: the tribal colour (the first one, if it is a gradient)"))
+
+    def __init__(self, mode=""):
+        super().__init__()
+        lay = QHBoxLayout(self)
+        lay.setContentsMargins(0, 0, 0, 0)
+        lay.setSpacing(4)
+        lay.addWidget(label("Car paint", "muted"))
+        self.group = QButtonGroup(self)
+        self.buttons = {}
+        for text, key, tip in self.MODES:
+            b = StudioButton(text)
+            b.setObjectName("mood")
+            b.setCheckable(True)
+            b.setToolTip(tip)
+            self.group.addButton(b)
+            self.buttons[key] = b
+            b.clicked.connect(lambda _=False, k=key: self.changed.emit(k))
+            lay.addWidget(b)
+        lay.addStretch()
+        self.set_mode(mode)
+
+    def set_mode(self, mode):
+        self.buttons.get(mode, self.buttons[""]).setChecked(True)
 
 
 class NoteView(QTextBrowser):
@@ -330,3 +361,49 @@ def pill(text):
     w = label(text, "badge")
     w.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
     return w
+
+
+class _Mark(QWidget):
+    """The livery mark from the rail: three slanted bars, dark, red and white."""
+
+    def __init__(self):
+        super().__init__()
+        self.setFixedSize(54, 36)
+
+    def paintEvent(self, _e):
+        p = QPainter(self)
+        p.setRenderHint(QPainter.Antialiasing)
+        p.setPen(Qt.NoPen)
+        for i, col in enumerate(("#2a1419", RED, "#ffffff")):
+            x = 2 + i * 16
+            p.setBrush(QColor(col))
+            p.drawPolygon(QPolygonF([QPointF(x + 6, 0), QPointF(x + 13, 0), QPointF(x + 7, 36), QPointF(x, 36)]))
+        p.end()
+
+
+class EmptyState(QWidget):
+    """A quiet cut panel for a list or view with nothing in it yet: the livery mark, a headline and one line of help."""
+
+    def __init__(self, title, text, parent=None):
+        super().__init__(parent)
+        lay = QVBoxLayout(self)
+        lay.setAlignment(Qt.AlignCenter)
+        lay.setSpacing(8)
+        head = label(title, "h2")
+        head.setAlignment(Qt.AlignCenter)
+        note = label(text, "muted", wrap=True)
+        note.setAlignment(Qt.AlignCenter)
+        note.setMaximumWidth(420)
+        lay.addWidget(_Mark(), 0, Qt.AlignHCenter)
+        lay.addWidget(head)
+        lay.addWidget(note, 0, Qt.AlignHCenter)
+
+    def paintEvent(self, _e):
+        p = QPainter(self)
+        p.setRenderHint(QPainter.Antialiasing)
+        r = QRectF(self.rect()).adjusted(.5, .5, -.5, -.5)
+        p.setPen(QPen(QColor(BORDER), 1))
+        p.setBrush(QColor(19, 10, 13, 120))
+        p.drawPath(chamfer_path(r, 18))
+        render.slash_edges(p, r, 18, QColor(RED), 2)
+        p.end()

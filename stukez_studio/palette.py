@@ -1,7 +1,7 @@
 """Colour maths, palette generator and name generator.
 
 Generated palettes follow the Project Library rules: base is a solid or a 2-colour gradient, tribals and
-sponsors are solid or 2-colour gradients, every outline is a single colour, hex codes only.
+sponsors and outlines are solid or 2-colour gradients (the generator makes solid outlines), hex codes only.
 """
 import colorsys
 import random
@@ -138,8 +138,8 @@ def _first(v):
 def quality(d):
     """Lowest contrast among the pairs that must stay readable (fill vs outline, tribal vs base)."""
     base_mid = _first(d["base"]) if not isinstance(d["base"], list) else d["base"][-1]
-    pairs = [(c, d["tribal_outline"]) for c in _cl(d["tribal"])] + [(c, d["sponsor_a_outline"]) for c in _cl(d["sponsor_a"])]
-    pairs += [(c, d["sponsor_b_outline"]) for c in _cl(d["sponsor_b"])]
+    pairs = [(c, o) for fill, line in (("tribal", "tribal_outline"), ("sponsor_a", "sponsor_a_outline"), ("sponsor_b", "sponsor_b_outline"))
+             for c in _cl(d[fill]) for o in _cl(d[line])]
     pairs += [(_first(d["tribal"]), base_mid)]
     return min(contrast(a, b) for a, b in pairs)
 
@@ -151,15 +151,12 @@ def _cl(v):
 def check_rules(d):
     """Problems against the Project Library rules; an empty list means the palette can be saved."""
     problems = []
-    for key in ("base", "tribal", "sponsor_a", "sponsor_b"):
+    for key in ("base", "tribal", "tribal_outline", "sponsor_a", "sponsor_a_outline", "sponsor_b", "sponsor_b_outline"):
         v = d[key]
         if isinstance(v, list) and len(v) != 2:
             problems.append(f"{key}: a gradient needs exactly 2 colours")
         if not all(valid_hex(c) for c in _cl(v)):
             problems.append(f"{key}: invalid hex")
-    for key in ("tribal_outline", "sponsor_a_outline", "sponsor_b_outline"):
-        if isinstance(d[key], list) or not valid_hex(d[key]):
-            problems.append(f"{key}: must be a single hex")
     return problems
 
 

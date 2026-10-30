@@ -72,6 +72,15 @@ def draw_icon(p, key, line, accent):
         p.drawPath(chamfer_path(QRectF(8, 4.5, 8, 9), 3))
         p.setBrush(QColor(line))
         p.drawPath(chamfer_path(QRectF(14, 14.5, 8, 9), 3))
+    elif key == "howto":         # a cut plate with a question mark
+        p.drawPath(chamfer_path(QRectF(3, 3, 22, 22), 7))
+        q = QPainterPath()
+        q.moveTo(10.5, 11.5)
+        q.cubicTo(10.5, 6.5, 18, 6.5, 17.5, 11)
+        q.cubicTo(17.3, 13.8, 14, 13.8, 14, 17)
+        p.setPen(QPen(accent, 2.2, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
+        p.drawPath(q)
+        p.drawPoint(QPointF(14, 20.5))
     elif key == "guides":        # an open book
         p.drawPolyline(_poly((14, 8), (6, 5.5), (3.5, 5.5), (3.5, 21.5), (6, 21.5), (14, 24)))
         p.drawPolyline(_poly((14, 8), (22, 5.5), (24.5, 5.5), (24.5, 21.5), (22, 21.5), (14, 24)))

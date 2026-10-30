@@ -35,6 +35,15 @@ _FRONT = {1: (.2, .15, .6, .07), 2: (.2, .42, .6, .1), 3: (.18, .8, .64, .1)}
 _REAR = {12: (.22, .22, .56, .1), 9: (.2, .45, .6, .1), 10: (.18, .8, .64, .1)}
 
 
+def side_zones_clear_of_wheels(front_side="left"):
+    """The suggested side zones with the front fender and the rear quarter lifted clear of the wheels, for cars that keep their own wheels."""
+    z = default_zones("side", front_side, "down")
+    for key, (cu, cv, w, h) in {"4": (.205, .50, .085, .10), "7": (.795, .45, .10, .11)}.items():
+        cx = cu if front_side == "left" else 1 - cu
+        z[key] = [round(cx - w / 2, 4), round(cv - h / 2, 4), w, h]
+    return z
+
+
 def default_zones(view, front_side="left", front_top="down"):
     out = {}
     if view == "side":
@@ -213,12 +222,25 @@ class Car:
 BUILTIN_DIR = Path(__file__).resolve().parent / "builtin"
 
 
+# the first is the default preview car; made by make_default_car.py, make_builtin_cars.py and make_builtin_illustrations.py
+BUILTIN_ORDER = ("s13-silvia", "s13-bstyle", "s13-origin", "180sx-origin", "s14-dmax", "s15-raijin", "s15-raiji", "er34-uras",
+                 "jzx90-bnsport", "galant", "e36-coupe", "s160-junction")
+
+
+def builtin_cars():
+    """The cars that ship with the program, in the order of BUILTIN_ORDER; missing ones are left out."""
+    out = []
+    for cid in BUILTIN_ORDER:
+        f = BUILTIN_DIR / cid / "car.json"
+        if f.exists():
+            out.append(Car(f.parent, json.loads(f.read_text(encoding="utf-8"))))
+    return out
+
+
 def builtin_car():
-    """The car that ships with the program (the default preview car), or None if its files are missing."""
-    f = BUILTIN_DIR / "s13-silvia" / "car.json"
-    if not f.exists():
-        return None
-    return Car(f.parent, json.loads(f.read_text(encoding="utf-8")))
+    """The default preview car, or None if the files are missing."""
+    cars = builtin_cars()
+    return cars[0] if cars else None
 
 
 class CarLibrary:

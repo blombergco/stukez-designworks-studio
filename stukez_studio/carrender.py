@@ -10,7 +10,9 @@ from math import cos, radians, sin
 import numpy as np
 from PIL import Image, ImageFilter
 from PySide6.QtCore import QPointF, QRectF, Qt
-from PySide6.QtGui import QColor, QFont, QImage, QLinearGradient, QPainter, QPen
+from PySide6.QtGui import QBrush, QColor, QFont, QImage, QLinearGradient, QPainter, QPen
+
+from . import wheels
 
 GLASS = np.array([16, 15, 26], dtype=np.float32)
 _cache = OrderedDict()
@@ -21,6 +23,34 @@ CACHE_SIZE = 240
 # preview plates: which zones show a plate in the card/preview, and with which sponsor colour
 PREVIEW_PLATES = {"side": {"5": "A", "4": "B", "7": "A"}, "top": {"2": "A", "8": "B", "9": "A"},
                   "front": {"2": "A", "3": "B"}, "rear": {"9": "A", "10": "B"}}
+
+
+# how the car is painted: "" = the livery (base behind the cut, tribal colour in front), "base" or "tribal" = one flat colour all over
+PAINT = ""
+
+
+def paint_mode(d):
+    """A palette can force a mode with `paint` (the gradient page does, to show its cut); otherwise the program-wide PAINT counts."""
+    mode = getattr(d, "paint", None)
+    mode = PAINT if mode is None else mode
+    return mode if mode in ("base", "tribal") else ""
+
+
+# the wheels shown on cars that have positions for them: (design, colour); a design of "" uses the car's own choice, "none" hides them
+WHEEL_CHOICE = ("", "")
+
+
+def wheel_set(car, view):
+    """[(x, y, r, design, colour)] as fractions of the view (x, y of the centre, r of the tyre against the width) for a car."""
+    spots = car.data.get("wheels", {}).get(view)
+    if not spots:
+        return []
+    own = car.data.get("default_wheel", {})
+    design = WHEEL_CHOICE[0] or own.get("design", "")
+    if design not in wheels.DESIGNS:
+        return []
+    colour = WHEEL_CHOICE[1] or own.get("colour", "bronze")
+    return [(x, y, r, design, colour) for x, y, r in spots]
 
 
 def _pil(car, view):
@@ -100,6 +130,23 @@ def split_gradient(rect, d, length, sx, sy, axis="x"):
     return g
 
 
+def _glass_fill(glass):
+    """(h, w, 3) colours of the windows of a clean base: dark tinted glass, lighter at the top, with one soft 45 degree reflection."""
+    h, w = glass.shape
+    ys, xs = np.where(glass)
+    fill = np.empty((h, w, 3), np.float32)
+    fill[:] = GLASS
+    if not len(ys):
+        return fill
+    y0, y1, x0, x1 = ys.min(), ys.max(), xs.min(), xs.max()
+    yy, xx = np.mgrid[0:h, 0:w].astype(np.float32)
+    t = np.clip((yy - y0) / max(1.0, float(y1 - y0)), 0, 1)[..., None]
+    fill = np.array([84, 90, 104], np.float32) * (1 - t) + np.array([20, 20, 30], np.float32) * t
+    centre = (x0 + x1) / 2 + (y0 + y1) / 2
+    band = np.exp(-(((xx + yy) - centre) / max(4.0, (x1 - x0) * .07)) ** 2)[..., None]
+    return np.clip(fill + band * 26, 0, 255)
+
+
 def _open(mask, size):
     """Binary opening: keeps big blobs (windows, arch interiors) and drops thin lines (panel edges)."""
     im = Image.fromarray((mask * 255).astype(np.uint8))
@@ -147,7 +194,10 @@ def _flat(w, h, car, view, d, plates, plate_scale=1.0):
     p.setRenderHint(QPainter.Antialiasing)
     full = QRectF(0, 0, w, h)
     vertical = view != "side"
-    if view == "side":   # base behind the middle of the door, tribal colour in front of it, one 45 degree gradient
+    mode = paint_mode(d)
+    if mode:    # one flat colour over the whole car, no cut (the first colour when the slot is a gradient)
+        p.fillRect(full, QColor(_first(d.base if mode == "base" else d.tribal)))
+    elif view == "side":   # base behind the middle of the door, tribal colour in front of it, one 45 degree gradient
         p.fillRect(full, split_gradient(full, d, w, 1 if car.front_side == "right" else -1, 1))
     elif view == "top" and w >= h:   # captured lying down: "down" is the front on the left, like the side view
         p.fillRect(full, split_gradient(full, d, w, -1 if car.front_top == "down" else 1, 1))
@@ -167,7 +217,7 @@ def _flat(w, h, car, view, d, plates, plate_scale=1.0):
             r.moveCenter(centre)
         fill, line = (d.sponsor_a, d.sponsor_a_outline) if which == "A" else (d.sponsor_b, d.sponsor_b_outline)
         p.setBrush(_brush(r, fill, vertical))
-        p.setPen(QPen(QColor(line), max(1.5, min(r.width(), r.height()) * .08)))
+        p.setPen(QPen(QBrush(_brush(r, line, vertical)), max(1.5, min(r.width(), r.height()) * .08)))
         p.drawRoundedRect(r, r.height() * .22, r.height() * .22)
         f = QFont("Segoe UI")
         f.setBold(True)
@@ -175,7 +225,7 @@ def _flat(w, h, car, view, d, plates, plate_scale=1.0):
         if size >= 8 or plate_scale == 1.0:      # a label too small to read is left out
             f.setPixelSize(max(6, size))
             p.setFont(f)
-            p.setPen(QColor(line))
+            p.setPen(QColor(_first(line)))
             p.drawText(r, Qt.AlignCenter, f"SPONSOR {which}")
     p.end()
     ptr = img.constBits()
@@ -190,7 +240,7 @@ def render(car, view, d, width, plates=None, plate_scale=1.0):
     plates = ({} if getattr(d, "no_plates", False) else PREVIEW_PLATES.get(view, {})) if plates is None else plates
     key = (car.id, view, width, car.clean, car.glass, repr((d.base, d.tribal, d.tribal_outline, d.sponsor_a, d.sponsor_a_outline, cut_of(d),
                                                  d.sponsor_b, d.sponsor_b_outline)), repr(sorted(plates.items())),
-           repr(car.zones(view)), car.front_side, car.front_top, plate_scale)
+           repr(car.zones(view)), car.front_side, car.front_top, plate_scale, tuple(wheel_set(car, view)), paint_mode(d))
     if key in _cache:
         _cache.move_to_end(key)
         return _cache[key]
@@ -199,9 +249,19 @@ def render(car, view, d, width, plates=None, plate_scale=1.0):
     rgb = np.clip(flat * shade[..., None], 0, 255)
     if paint is not None:    # only the paint takes the livery; windows, wheels and lights keep their own colours
         rgb = base * (1 - paint[..., None]) + rgb * paint[..., None]
-    rgb[glass] = GLASS
+    if glass.any():     # soft edges: the mask is blurred a little so the windows are not jagged
+        soft = np.asarray(Image.fromarray((glass * 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(.8)), np.float32)[..., None] / 255
+        rgb = rgb * (1 - soft) + _glass_fill(glass) * soft
     out = np.dstack([rgb, alpha * 255]).astype(np.uint8)
     qi = QImage(out.data, width, h, width * 4, QImage.Format_RGBA8888).copy()
+    spots = wheel_set(car, view)
+    if spots:
+        canvas = qi.convertToFormat(QImage.Format_ARGB32_Premultiplied)
+        wp = QPainter(canvas)
+        for x, y, r, design, colour in spots:
+            wheels.draw_wheel(wp, x * width, y * h, r * width, design, colour)
+        wp.end()
+        qi = canvas.convertToFormat(QImage.Format_RGBA8888)
     _cache[key] = qi
     if len(_cache) > CACHE_SIZE:
         _cache.popitem(last=False)

@@ -10,7 +10,7 @@ The rest of this page is for people who work on the program, or keep their own v
 
 ## Use it
 
-Double-click `StukeZ Designworks Studio.exe` in this folder. It finds the vault by looking at the folders above itself; if you move it, it asks once for the Kaizen Cave folder and remembers it. `F5` reloads after you changed notes in Obsidian, `Ctrl+1` to `Ctrl+5` switch page.
+Double-click `StukeZ Designworks Studio.exe` in this folder. It finds the vault by looking at the folders above itself; if you move it, it asks once for the Kaizen Cave folder and remembers it. `F5` reloads after you changed notes in Obsidian, `Ctrl+1` to `Ctrl+8` switch page.
 
 | Page | What it does |
 |---|---|
@@ -20,11 +20,12 @@ Double-click `StukeZ Designworks Studio.exe` in this folder. It finds the vault 
 | **Prompts** | All 445 Gemini prompts by category. Choose a colour version: greyscale master, the palette from the New project page, any project, or the ready-made options stored in the note. *Copy prompt* puts it on the clipboard. |
 | **Sponsors** | The Drift Sponsor Database filtered by chassis and engine (same matching as `query.py`), category, region and text. Colour-coded fit (fits your build / universal / check fitment), brand note on the right. *Copy list* or *Save as vault note* (to `Sponsor Lists/`). |
 | **Guides** | Glossaries, style guide, placement and paint guides, year plan, logo notes. Wikilinks work; links to a project open it on the Projects page. |
-| **Workshop** | Tools for making parts of a livery. **Gradients**: pick a rear and a front colour (suggestions: analogous, complement, split, triad, lighter, darker), set the cut (angle, centre, how much of the car it covers; the studio standard is 45°, centred, half the car), see it on your car, keep favourites in `Project Library/Gradients/` and export `.ase`; *Use in New project* sends the pair to the base, tribal or a sponsor slot. **Logo outlines**: one single-colour contour around a sponsor logo (thickness, gap, join letters, round corners, colour from the logo or a project), saved as outlined PNG, outline only, a cut plate and a layered SVG; a whole folder at once is possible. Drop an image on the preview to open it. |
+| **How to** | A short explanation of how the program works, one topic at a time. |
+| **Workshop** | Tools for making parts of a livery. **Sponsors and outlines**: change the colour or gradient of the sponsors and every outline on big plates on the car. **Gradients**: pick a rear and a front colour (suggestions: analogous, complement, split, triad, lighter, darker), set the cut (angle, centre, how much of the car it covers; the studio standard is 45°, centred, half the car), see it on your car, keep favourites in `Project Library/Gradients/` and export `.ase`; *Use in New project* sends the pair to the base, tribal or a sponsor slot. **Logo outlines**: one single-colour contour around a sponsor logo (thickness, gap, join letters, round corners, colour from the logo or a project), saved as outlined PNG, outline only, a cut plate and a layered SVG; a whole folder at once is possible. Drop an image on the preview to open it. |
 
 ## Your own cars
 
-The **Preview car** box (top right) switches every preview (cards, detail view, New project) between the built-in S13 Silvia and your own cars, with the palette's base gradient and tribals painted on the car (New project also shows small sponsor plates). The project page gets an **On car** tab: all four views with the real sponsor logos placed in the zones of that car (same logo masters and text stand-ins as the generic Placement preview), plus a PNG export, and an **Illustrator template** button that exports a view in the project's colours.
+The **Car paint** switch (Projects, New project and Workshop) chooses how the car is painted in every preview: the livery as a gradient (default), one flat base colour or one flat tribal colour. The **Preview car** box (top right) switches every preview (cards, detail view, New project) between the twelve built-in cars and your own cars, with the palette's base gradient and tribals painted on the car (New project also shows small sponsor plates). The project page gets an **On car** tab: all four views with the real sponsor logos placed in the zones of that car (same logo masters and text stand-ins as the generic Placement preview), plus a PNG export, and an **Illustrator template** button that exports a view in the project's colours.
 
 For the best result capture a **clean grey base**: every panel one mid-grey, glass left white, no livery. The app then keeps the shading, panel lines and highlights of the capture and paints the livery under them, and draws the white glass dark (the *White areas are windows* box turns that off, which a white car needs). A capture that already carries a livery still works, but only its silhouette and fine panel lines are used, so the old paint never shows. The side view's front is detected (it is the end with the lower hood line); the top view's front is a setting, default *at the bottom* like your ER34 capture. Both are editable per car.
 
@@ -64,7 +65,8 @@ stukez_studio/gradients.py       gradient suggestions, favourites file, .ase exp
 stukez_studio/outlines.py       logo outline engine (numpy and Pillow, no Qt)
 stukez_studio/backup.py         back up the vault: commit and push to GitHub
 stukez_studio/export.py         project package (ZIP)
-stukez_studio/builtin/s13-silvia/  the built-in preview car (picture, paint mask, zones); made with make_default_car.py from an illustration
+stukez_studio/builtin/<car>/    the built-in preview cars: s13-silvia (picture, paint mask; make_default_car.py), s13-origin and s15-raiji (neutral grey captures; make_builtin_cars.py)
+stukez_studio/wheels.py         vector wheels (TE37, VS-KF) drawn for the cars that come without wheels
 stukez_studio/page_*.py         the pages (Workshop has two tabs: gradients, logo outlines)
 stukez_studio/main.py           main window, vault lookup
 ```

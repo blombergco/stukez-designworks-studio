@@ -1,4 +1,4 @@
-"""Workshop > Logo outlines: one single-colour contour around a sponsor logo (or a whole folder of them)."""
+"""Workshop > Logo outlines: one contour (a colour, or a 2-colour gradient) around a sponsor logo (or a whole folder of them)."""
 from pathlib import Path
 
 from PIL import Image
@@ -97,11 +97,19 @@ class OutlinesTab(QWidget):
         self.e_col = QLineEdit(ol.DEFAULT_OUTLINE, maxLength=7)
         self.e_col.setFixedWidth(90)
         self.b_col.changed.connect(lambda: (self.e_col.setText(self.b_col.hex()), self._queue()))
-        self.e_col.editingFinished.connect(self._typed)
+        self.e_col.editingFinished.connect(lambda: self._typed(self.b_col, self.e_col))
+        self.grad = QCheckBox("2-colour gradient (left to right)")
+        self.b_col2 = ColourButton("#F5F0F1")
+        self.e_col2 = QLineEdit("#F5F0F1", maxLength=7)
+        self.e_col2.setFixedWidth(90)
+        self.b_col2.changed.connect(lambda: (self.e_col2.setText(self.b_col2.hex()), self._queue()))
+        self.e_col2.editingFinished.connect(lambda: self._typed(self.b_col2, self.e_col2))
+        self.grad.toggled.connect(self._grad_toggled)
         self.from_project = QComboBox()
         self.from_project.addItem("Colour of a project's outline…", None)
         for p in vault.projects():
-            self.from_project.addItem(f"{p.id:03d}  {p.name}  {p.sponsor_a_outline}", p.sponsor_a_outline)
+            cs = p.sponsor_a_outline if isinstance(p.sponsor_a_outline, list) else [p.sponsor_a_outline]
+            self.from_project.addItem(f"{p.id:03d}  {p.name}  {' → '.join(cs)}", cs)
         self.from_project.activated.connect(self._from_project)
         w_th, self.s_th = slider_row("Thickness", 0, 80, 12, " px", self._queue)
         w_gap, self.s_gap = slider_row("Gap", 0, 40, 0, " px", self._queue)
@@ -119,6 +127,10 @@ class OutlinesTab(QWidget):
         col.addWidget(self.e_col)
         col.addWidget(button("Auto contrast", slot=self.auto_colour))
         col.addStretch()
+        col2 = QHBoxLayout()
+        col2.addWidget(self.b_col2)
+        col2.addWidget(self.e_col2)
+        col2.addStretch()
         pick = QHBoxLayout()
         pick.addWidget(button("Choose logo…", True, self.choose))
         pick.addWidget(button("Outline a whole folder…", slot=self.batch))
@@ -128,8 +140,10 @@ class OutlinesTab(QWidget):
         form.addWidget(self.file_label)
         form.addWidget(self.rm_bg)
         form.addWidget(w_tol)
-        form.addWidget(label("Outline colour (one colour, like every outline in the library)", "h2"))
+        form.addWidget(label("Outline colour (solid, or a 2-colour gradient)", "h2"))
         form.addLayout(col)
+        form.addWidget(self.grad)
+        form.addLayout(col2)
         form.addWidget(self.from_project)
         form.addWidget(label("Shape", "h2"))
         form.addWidget(w_th)
@@ -160,10 +174,12 @@ class OutlinesTab(QWidget):
         right.addWidget(self.stage, 1)
         right.addWidget(self.info)
         acts = QHBoxLayout()
-        acts.addWidget(button("Copy outline hex", slot=lambda: (copy_text(self.b_col.hex()), self.status.emit("Copied the outline colour"))))
+        acts.addWidget(button("Copy outline hex", slot=lambda: (copy_text(" → ".join(c for c in (self.b_col.hex(), self.spec().colour2) if c)),
+                                                                self.status.emit("Copied the outline colour"))))
         acts.addStretch()
         right.addLayout(acts)
         right.addWidget(self.save_btn)
+        self._grad_toggled(False)
         lay = QHBoxLayout(self)
         lay.setContentsMargins(0, 8, 0, 0)
         lay.addWidget(scroll)
@@ -172,7 +188,8 @@ class OutlinesTab(QWidget):
 
     # ------------------------------------------------------------------ input
     def spec(self):
-        return ol.Spec(self.b_col.hex(), self.s_th.value(), self.s_gap.value(), self.s_join.value(), self.round.isChecked())
+        return ol.Spec(self.b_col.hex(), self.b_col2.hex() if self.grad.isChecked() else "", self.s_th.value(), self.s_gap.value(),
+                       self.s_join.value(), self.round.isChecked())
 
     def choose(self):
         f, _ = QFileDialog.getOpenFileName(self, "Choose a logo", "", "Images (*" + " *".join(ol.EXTS) + ")")
@@ -206,21 +223,32 @@ class OutlinesTab(QWidget):
         self._queue()
 
     # ------------------------------------------------------------------ colour
-    def _typed(self):
-        h = pal.valid_hex(self.e_col.text())
+    def _typed(self, b, e):
+        h = pal.valid_hex(e.text())
         if h:
-            self.b_col.set_hex(h)
-            self.e_col.setText(h)
+            b.set_hex(h)
+            e.setText(h)
             self._queue()
         else:
-            self.e_col.setText(self.b_col.hex())
+            e.setText(b.hex())
+
+    def _grad_toggled(self, on):
+        self.b_col2.setVisible(on)
+        self.e_col2.setVisible(on)
+        self._queue()
 
     def _from_project(self, i):
-        h = self.from_project.itemData(i)
-        if h:
-            self.b_col.set_hex(h)
-            self.e_col.setText(h)
-            self._queue()
+        cs = self.from_project.itemData(i)
+        if cs:
+            self.b_col.set_hex(cs[0])
+            self.e_col.setText(cs[0])
+            self.grad.blockSignals(True)
+            self.grad.setChecked(len(cs) == 2)
+            self.grad.blockSignals(False)
+            if len(cs) == 2:
+                self.b_col2.set_hex(cs[1])
+                self.e_col2.setText(cs[1])
+            self._grad_toggled(len(cs) == 2)
 
     def auto_colour(self):
         if self.logo is None:
@@ -246,13 +274,13 @@ class OutlinesTab(QWidget):
         sp = self.spec()
         f = min(1.0, PREVIEW_SIDE / max(self.logo.size))
         small = self.logo.resize((max(1, round(self.logo.width * f)), max(1, round(self.logo.height * f))), Image.LANCZOS) if f < 1 else self.logo
-        scaled = ol.Spec(sp.colour, round(sp.thickness * f), round(sp.gap * f), round(sp.join * f), sp.round_corners)
+        scaled = ol.Spec(sp.colour, sp.colour2, round(sp.thickness * f), round(sp.gap * f), round(sp.join * f), sp.round_corners)
         if sp.thickness > 0 and scaled.thickness == 0:
             scaled.thickness = 1
         res = ol.make(small, scaled)
         self.stage.set_image(res["combined"])
         self.save_btn.setEnabled(True)
-        self.info.setText(f"Outline {sp.colour}, {sp.thickness} px"
+        self.info.setText(f"Outline {sp.colour}{' → ' + sp.colour2 if sp.colour2 else ''}, {sp.thickness} px"
                           + (f", gap {sp.gap} px" if sp.gap else "") + (f", joins gaps up to {sp.join} px" if sp.join else "")
                           + f". The saved files are {self.logo.width + 2 * (sp.gap + sp.thickness + 4)} × "
                             f"{self.logo.height + 2 * (sp.gap + sp.thickness + 4)} px.")
