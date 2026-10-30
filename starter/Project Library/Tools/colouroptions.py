@@ -28,12 +28,14 @@ M_START, M_END = "<!-- colour-options -->", "<!-- /colour-options -->"
 P_START, P_END = "<!-- motifs:auto -->", "<!-- /motifs:auto -->"
 SKIP_DIRS = {"_Archive - colour versions"}
 SKIP_NAMES = {"Gemini Prompt index", "Motif ideas", "Style guide", "Text and lettering plan", "Pipeline tips",
-              "Design glossary", "Design glossary - Japanese", "Universal details guide"}
+              "Design glossary", "Design glossary - Japanese", "Universal details guide", "Zoku Tribals - index"}
 PATTERN_SETS = ("Seamless Patterns - Neutral", "Seamless Patterns 2 - Neutral", "Seamless Patterns 3 - Neutral", "Seamless Patterns 4 - Neutral", "Seamless Patterns 5 - Neutral")
 CATEGORIES = {"Side Designs": "Side designs", "Hood Motifs": "Hood motifs", "Textures and Fill Elements": "Elements",
               "Tribal": "Tribals", "Banners": "Banners", "Cut-Ready": "Cut-ready", "Smoke and Tandem": "Smoke and tandem",
               "Mechanical": "Mechanical", "Dragon Atlas": "Dragon atlas", "Style Variants": "Style variants",
-              "World Motifs": "World motifs", "Universal Details": "Universal details"}
+              "World Motifs": "World motifs", "Universal Details": "Universal details", "Zoku Tribals": "Zoku tribals"}
+# Categories that carry their own colour versions: listed in the index but never touched by refresh().
+OWN_COLOURS = {"Zoku tribals"}
 CAP = {"prompt": 6, "pattern": 3}
 WANT = {"prompt": 3, "pattern": 2}
 LABEL = "ABCDEFGH"
@@ -255,7 +257,8 @@ def write_project_notes(projects, items, chosen):
 
 
 def refresh():
-    projects, items = load_projects(), load_prompts()
+    projects = load_projects()
+    items = [i for i in load_prompts() if i["cat"] not in OWN_COLOURS]
     chosen = select(projects, items)
     for it in items:
         if it["kind"] == "prompt":

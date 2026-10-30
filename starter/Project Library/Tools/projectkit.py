@@ -6,10 +6,10 @@ Usage (from a throwaway script):
     save(P(1, "Name", base=("#aaaaaa", "#bbbbbb"), ...))
     rebuild_index()
 
-Rules enforced here (set by the user 2026-10-27):
+Rules enforced here (set by the user 2026-10-27, outlines opened up 2026-10-29):
   * Base colour: solid hex, or a gradient of exactly 2 hex colours.
   * Tribals and sponsors: solid hex, or a 2-colour gradient fill.
-  * Every outline is a single solid hex.
+  * Outlines: a solid hex (the default, and every project made before 2026-10-29) or a 2-colour gradient.
 """
 import json
 import re
@@ -34,7 +34,7 @@ def _norm(v, what, allow_gradient):
         if len(v) != 2:
             raise ValueError(f"{what}: gradients must have exactly 2 colours, got {len(v)}")
         return tuple(_norm(c, what, False) for c in v)
-    raise ValueError(f"{what}: outline must be a single hex" if not allow_gradient else f"{what}: invalid {v!r}")
+    raise ValueError(f"{what}: invalid {v!r}")
 
 
 @dataclass
@@ -44,11 +44,11 @@ class Project:
     concept: str
     base: object
     tribal: object
-    tribal_outline: str
+    tribal_outline: object
     sponsor_a: object
-    sponsor_a_outline: str
+    sponsor_a_outline: object
     sponsor_b: object
-    sponsor_b_outline: str
+    sponsor_b_outline: object
     platform: str = ""
     created: str = ""
     moods: tuple = ()
@@ -60,9 +60,9 @@ class Project:
         self.tribal = _norm(self.tribal, "tribal", True)
         self.sponsor_a = _norm(self.sponsor_a, "sponsor_a", True)
         self.sponsor_b = _norm(self.sponsor_b, "sponsor_b", True)
-        self.tribal_outline = _norm(self.tribal_outline, "tribal_outline", False)
-        self.sponsor_a_outline = _norm(self.sponsor_a_outline, "sponsor_a_outline", False)
-        self.sponsor_b_outline = _norm(self.sponsor_b_outline, "sponsor_b_outline", False)
+        self.tribal_outline = _norm(self.tribal_outline, "tribal_outline", True)
+        self.sponsor_a_outline = _norm(self.sponsor_a_outline, "sponsor_a_outline", True)
+        self.sponsor_b_outline = _norm(self.sponsor_b_outline, "sponsor_b_outline", True)
         self.created = self.created or date.today().isoformat()
 
     @property
@@ -208,8 +208,8 @@ def write_patterns_note(p: Project):
 def load_project(path):
     fm = _read_fm(path)
     t = lambda v: tuple(v) if isinstance(v, list) else v
-    return Project(int(fm["id"]), fm["name"], "", t(fm["base"]), t(fm["tribal"]), fm["tribal_outline"],
-                   t(fm["sponsor_a"]), fm["sponsor_a_outline"], t(fm["sponsor_b"]), fm["sponsor_b_outline"],
+    return Project(int(fm["id"]), fm["name"], "", t(fm["base"]), t(fm["tribal"]), t(fm["tribal_outline"]),
+                   t(fm["sponsor_a"]), t(fm["sponsor_a_outline"]), t(fm["sponsor_b"]), t(fm["sponsor_b_outline"]),
                    platform=fm.get("platform", ""), created=str(fm.get("created", "")),
                    moods=tuple(fm.get("moods", ())), motifs=tuple(fm.get("motifs", ())),
                    week=int(fm.get("week", 0) or 0))

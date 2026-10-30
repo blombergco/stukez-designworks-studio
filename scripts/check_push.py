@@ -13,8 +13,8 @@ ZERO = "0" * 40
 THIS_FILE = "scripts/check_push.py"
 
 # Paths that never go to the public repo (the author's cars, sponsor database, prompts and personal folders).
+# (stukez_studio/builtin/ holds the two built-in preview cars; the author chose to publish them with 1.3.0.)
 FORBIDDEN_PATHS = (
-    "stukez_studio/builtin/",
     "Drift Sponsor Database/",
     "Sponsor Lists/",
     "Project Library/Car Templates/",

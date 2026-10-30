@@ -167,14 +167,14 @@ def fill_image(size, cols, vertical=False):
 
 
 def paint(mask, cols, outline, outline_px):
-    """mask (L) -> RGBA with gradient fill and an outline of outline_px."""
+    """mask (L) -> RGBA with gradient fill and an outline of outline_px; `outline` is one hex or a list of 1-2 hexes."""
     pad = outline_px + 2
     m = Image.new('L', (mask.size[0] + 2 * pad, mask.size[1] + 2 * pad), 0)
     m.paste(mask, (pad, pad))
     out = Image.new('RGBA', m.size, (0, 0, 0, 0))
     if outline_px > 0:
         grown = m.filter(ImageFilter.MaxFilter(2 * outline_px + 1))
-        ol = Image.new('RGBA', m.size, hexrgb(outline) + (255,))
+        ol = fill_image(m.size, [outline] if isinstance(outline, str) else outline).convert('RGBA')
         ol.putalpha(grown)
         out.alpha_composite(ol)
     fl = fill_image(m.size, cols).convert('RGBA')
@@ -277,7 +277,7 @@ TOP_ZONES = {1: (720, 148, 96, 18), 2: (720, 92, 76, 46), 3: (720, 52, 70, 16), 
 
 def sponsor_tile(entry, pal, box, scale, idx, stats):
     cols = pal['sponsor_a' if entry['fill'] == 'A' else 'sponsor_b']
-    ol = (pal['sponsor_a_outline' if entry['fill'] == 'A' else 'sponsor_b_outline'] or ['#000000'])[0]
+    ol = (pal['sponsor_a_outline' if entry['fill'] == 'A' else 'sponsor_b_outline'] or ['#000000'])[:2]
     bw, bh = box[2] * scale * entry['size'], box[3] * scale * entry['size']
     if bw < 8 or bh < 6:
         return None

@@ -4,7 +4,7 @@ All notable changes to StukeZ Designworks Studio. Versions follow `major.minor.p
 adds something, a major changes how your data is stored. The newest release is the top entry; the text under it is what
 the update dialog shows.
 
-## Unreleased
+## 1.3.0
 
 - The Workshop tab *Sponsors and outlines* is gone: the colours of the sponsors and their outlines are set on New project (with a live preview) and, per logo, on *Place on car*.
 - A little motion: a new palette sweeps across the car in the preview (the cut of the livery slides in from the front), pages fade in, and the logo in the rail shines once at start and when you point at it. `KAIZEN_NOANIM=1` turns all of it off.
