@@ -5,12 +5,10 @@ cut (angle, position and how much of the car it covers); the studio standard is 
 """
 import json
 import random
-import struct
 from dataclasses import asdict, dataclass
-from pathlib import Path
 
 from . import palette as pal
-from .backend import _ase_block, _ase_name
+from .swatch import write_file
 
 STANDARD = dict(angle=45.0, pos=.5, span=.5)
 
@@ -122,10 +120,4 @@ class Favourites:
 
 def write_ase(items, path, title="StukeZ gradients"):
     """Adobe Swatch Exchange file: two swatches per gradient (Illustrator builds the gradient from them)."""
-    blocks = [_ase_block(0xC001, _ase_name(title))]
-    for g in items:
-        for i, c in enumerate(g.colours()):
-            r, gr, b = (int(c[k:k + 2], 16) / 255 for k in (1, 3, 5))
-            blocks.append(_ase_block(0x0001, _ase_name(f"{g.name} {i + 1} {c}") + b"RGB " + struct.pack(">3fH", r, gr, b, 2)))
-    blocks.append(_ase_block(0xC002, b""))
-    Path(path).write_bytes(b"ASEF" + struct.pack(">HHI", 1, 0, len(blocks)) + b"".join(blocks))
+    write_file(path, title, [(f"{g.name} {i + 1} {c}", c) for g in items for i, c in enumerate(g.colours())])

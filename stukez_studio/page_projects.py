@@ -10,7 +10,7 @@ from PySide6.QtWidgets import (QAbstractItemView, QApplication, QComboBox, QFile
                                QSplitter, QStyle, QStyledItemDelegate, QTabWidget, QVBoxLayout, QWidget)
 
 from . import export, render
-from .backend import write_ase
+from .swatch import write_ase
 from .compare import CompareDialog
 from .oncar import render_placement
 from .templates import export_template

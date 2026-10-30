@@ -323,7 +323,7 @@ class MainWindow(QMainWindow):
         self.projects.select_project(proj.id)
 
     def reload(self):
-        self.vault._stems = self.vault._prompts = self.vault._brands = None
+        self.vault.invalidate()
         self.vault.cars().cars(reload=True)
         self.cars.reload()
         self.cars_changed()

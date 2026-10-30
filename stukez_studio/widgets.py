@@ -401,7 +401,7 @@ def run_build(parent, vault, pid, only_missing=True):
         QMessageBox.warning(parent, "Build failed", f"{type(e).__name__}: {e}")
         return None
     dlg.close()
-    vault._stems = None
+    vault.invalidate()
     return res
 
 

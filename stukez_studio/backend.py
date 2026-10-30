@@ -6,7 +6,6 @@ Obsidian always agree on rules and data.
 """
 import os
 import re
-import struct
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -14,6 +13,8 @@ from urllib.parse import quote, unquote
 
 # imported here so PyInstaller bundles what the vault tools need when they are loaded at run time
 import argparse, collections, dataclasses, datetime, shutil  # noqa: E401,F401
+
+from .swatch import colours, write_ase
 
 
 PARTS = ("Design vocabulary", "Detail kit", "Build sheet and sponsor kit", "Placement preview")
@@ -36,10 +37,6 @@ def find_vault(saved=""):
         if c and looks_like_vault(c):
             return Path(c)
     return None
-
-
-def colours(v):
-    return list(v) if isinstance(v, (list, tuple)) else [v]
 
 
 @dataclass
@@ -96,13 +93,14 @@ class Vault:
                 sys.path.insert(0, str(tools))
         import projectkit, colouroptions, dblib  # vault tools
         self.pk, self.co, self.dblib = projectkit, colouroptions, dblib
-        self._stems = None
-        self._projects = None
-        self._prompts = None
-        self._brands = None
         self._builder = None
         self._carlib = None
         self._pp = None
+        self.invalidate()
+
+    def invalidate(self):
+        """Forget what was read from disk; the next call of each method reads it again."""
+        self._stems = self._projects = self._prompts = self._brands = None
 
     # ------------------------------------------------------------------ projects
     def projects(self, reload=False):
@@ -203,8 +201,7 @@ class Vault:
         ase = self.lib / "Swatches" / f"{proj.title}.ase"
         ase.parent.mkdir(exist_ok=True)
         write_ase(proj, ase)
-        self._projects = None
-        self._stems = None
+        self.invalidate()
         return next(x for x in self.projects() if x.id == proj.id)
 
     # ------------------------------------------------------------------ prompts
@@ -348,24 +345,3 @@ class Vault:
         return hits[0] if hits else None
 
 
-# ---------------------------------------------------------------------- swatches
-def _ase_block(kind, body):
-    return struct.pack(">HI", kind, len(body)) + body
-
-
-def _ase_name(s):
-    return struct.pack(">H", len(s) + 1) + s.encode("utf-16-be") + b"\0\0"
-
-
-def write_ase(p, path):
-    """Adobe Swatch Exchange file in the same layout as the vault's own swatch files."""
-    blocks = [_ase_block(0xC001, _ase_name(p.title))]
-    for label, value, _outline in p.slots():
-        label = "Tribal" if label == "Tribals" else label
-        cs = colours(value)
-        for i, c in enumerate(cs):
-            name = (f"{label} {i + 1}" if len(cs) > 1 else label) + f" {c}"
-            r, g, b = (int(c[k:k + 2], 16) / 255 for k in (1, 3, 5))
-            blocks.append(_ase_block(0x0001, _ase_name(name) + b"RGB " + struct.pack(">3fH", r, g, b, 2)))
-    blocks.append(_ase_block(0xC002, b""))
-    Path(path).write_bytes(b"ASEF" + struct.pack(">HHI", 1, 0, len(blocks)) + b"".join(blocks))
