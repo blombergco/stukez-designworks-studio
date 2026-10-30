@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 
 from PySide6.QtCore import QPointF, QRectF, Qt, Signal
-from PySide6.QtGui import QColor, QFont, QImage, QPainter, QPen
+from PySide6.QtGui import QColor, QImage, QPainter, QPen
 from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox, QDialog, QDialogButtonBox, QFileDialog, QFormLayout,
                                QHBoxLayout, QHeaderView, QLineEdit, QListWidget, QListWidgetItem, QMenu, QMessageBox,
                                QProgressDialog, QSizePolicy, QSplitter, QTabBar, QTableWidget, QTableWidgetItem,
@@ -274,10 +274,7 @@ class ZoneEditor(QWidget):
             img = QImage(str(self.car.view_path(self.view)))
         p.drawImage(ir, img)
         self._sponsor_tiles(p, ir)
-        f = QFont("Segoe UI")
-        f.setPixelSize(12)
-        f.setBold(True)
-        p.setFont(f)
+        p.setFont(th.body_font(12, bold=True))
         for z, box in self.car.zones(self.view).items():
             r = self._zone_rect(box, ir)
             rgb = QColor(*ZONE_RGB[int(z) % len(ZONE_RGB)])
@@ -288,6 +285,7 @@ class ZoneEditor(QWidget):
             p.drawRoundedRect(r, 5, 5)
             text = f"{z}" if r.width() < 70 else f"{z} {ZONE_NAMES.get(int(z), '')}"
             tr = r.adjusted(3, 2, -2, -2)
+            text = p.fontMetrics().elidedText(text, Qt.ElideRight, max(0, int(tr.width())))   # never past the zone's box
             p.setPen(QColor(0, 0, 0, 170))
             p.drawText(tr.translated(1, 1), Qt.AlignLeft | Qt.AlignTop, text)
             p.setPen(QColor("#ffffff"))

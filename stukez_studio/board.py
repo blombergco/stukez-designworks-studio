@@ -5,9 +5,12 @@ fractions of the view, so it survives any scaling), a turn, a colour (the logo's
 colour/gradient) and an optional outline. Boards are saved as `Project Library/Boards/<name>.json`; imported images are
 copied to `Boards/Logos/`, so a board never depends on a file outside the workspace.
 """
+import copy
 import json
 import os
+import random
 import re
+import time
 import uuid
 from collections import OrderedDict
 from pathlib import Path
@@ -287,11 +290,6 @@ def prepare(item, pl, folder, need=400):
 MISSING = Prepared(QImage(), (1, 1), ok=False)
 
 
-def clear_cache():
-    _prepared.clear()
-    _sources.clear()
-
-
 # ---------------------------------------------------------------------- geometry
 def item_size(item, T, prep):
     """(logo width, logo height) in pixels for the car view drawn in rectangle T."""
@@ -444,6 +442,77 @@ class Board:
         used = {it["file"] for it in self.items}
         logos = self.root / "Logos"
         return [f for f in sorted(logos.glob("*.png")) if f"Logos/{f.name}" not in used] if logos.exists() else []
+
+
+# ---------------------------------------------------------------------- undo and shuffle
+class History:
+    """Undo and redo for the items of one board. Call snapshot() before a change: changes with the same tag within
+    GROUP_SECONDS (a drag, a slider) count as one step, so one undo takes them all back."""
+    LIMIT = 80
+    GROUP_SECONDS = 1.2
+
+    def __init__(self, clock=time.monotonic):
+        self._clock = clock
+        self._undo, self._redo = [], []
+        self._tag, self._time = "", 0.0
+
+    def clear(self):
+        self._undo, self._redo = [], []
+        self._tag = ""
+
+    def snapshot(self, items, tag):
+        now = self._clock()
+        if tag == self._tag and now - self._time < self.GROUP_SECONDS:
+            self._time = now
+            return
+        self._tag, self._time = tag, now
+        self._undo.append(copy.deepcopy(items))
+        del self._undo[:-self.LIMIT]
+        self._redo.clear()
+
+    def undo(self, items):
+        """The items to go back to, or None when there is nothing to undo. `items` (the current ones) are kept for redo."""
+        if not self._undo:
+            return None
+        self._redo.append(copy.deepcopy(items))
+        self._tag = ""
+        return self._undo.pop()
+
+    def redo(self, items):
+        """The items to go forward to, or None when there is nothing to redo. `items` (the current ones) are kept for undo."""
+        if not self._redo:
+            return None
+        self._undo.append(copy.deepcopy(items))
+        self._tag = ""
+        return self._redo.pop()
+
+
+SHUFFLE_SPOTS = ((.52, .62), (.22, .58), (.78, .58), (.16, .50), (.5, .8), (.66, .45), (.36, .5))   # good spots on the side of a
+# car with its front on the left: door, fender, rear quarter, hood, skirt, quarter glass
+
+
+def shuffle_items(items, side=True, front_right=False, rng=random):
+    """New places, sizes, turns and sponsor colours for the items of one view: a quick way to get ideas.
+
+    Tribals go across the body. Sponsor logos take the spots of SHUFFLE_SPOTS on the side view (mirrored when the car's
+    front is on the right), or any place on the view otherwise. The items are changed in place."""
+    spots = list(SHUFFLE_SPOTS)
+    rng.shuffle(spots)
+    sponsors = 0
+    for it in items:
+        if it["kind"] == "tribal":
+            it["x"], it["y"] = round(rng.uniform(.38, .62), 4), round(rng.uniform(.5, .62), 4)
+            it["w"] = round(rng.uniform(.32, .55), 4)
+            it["rot"] = round(rng.choice([0, 0, rng.uniform(-6, 6)]), 1)
+            continue
+        x, y = spots[sponsors % len(spots)] if side else (rng.uniform(.3, .7), rng.uniform(.2, .8))
+        sponsors += 1
+        it["x"] = round(min(1.0, max(0.0, (1 - x if front_right and side else x) + rng.uniform(-.02, .02))), 4)
+        it["y"] = round(y + rng.uniform(-.02, .02), 4)
+        it["w"] = round(rng.uniform(.09, .2), 4)
+        it["rot"] = round(rng.choice([0, 0, rng.uniform(-8, 8)]), 1)
+        if it["colour"]["mode"] != "original":
+            it["colour"]["mode"] = rng.choice(["sponsor_a", "sponsor_b"])
 
 
 def text_image(text, px=260):

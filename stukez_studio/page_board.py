@@ -5,8 +5,6 @@ give it the colour of Sponsor A or B, the tribal colour or any colour or gradien
 """
 import copy
 import math
-import random
-import time
 from pathlib import Path
 
 from PySide6.QtCore import QPointF, QRectF, Qt, QTimer, Signal
@@ -396,8 +394,7 @@ class BoardTab(QWidget):
         self.palette_source = palette_source
         self.board = bd.Board(vault.lib)
         self._loading = False
-        self._undo, self._redo = [], []
-        self._last_tag, self._last_time = "", 0.0
+        self.history = bd.History()
         self._pl = bd.palette_ns({})
 
         self.canvas = BoardCanvas()
@@ -590,6 +587,9 @@ class BoardTab(QWidget):
         self.canvas.update()
         self.layoutChanged.emit()
 
+    def preview_changed(self):
+        self.refresh_car()
+
     def refresh_car(self):
         """After the preview car changed: only the views that car has can be chosen."""
         car = render.PREVIEW_CAR
@@ -682,7 +682,7 @@ class BoardTab(QWidget):
             QMessageBox.warning(self, "Open board", f"Could not open {name}: {e}")
             return
         self.board = b
-        self._undo, self._redo = [], []
+        self.history.clear()
         self.canvas.board = b
         self.canvas.selected = ""
         i = self.source.findData(b.source)
@@ -709,7 +709,7 @@ class BoardTab(QWidget):
         b = bd.Board(self.vault.lib, f"Board {n}" if n > 1 else "Untitled")
         b.source = self.board.source
         self.board = b
-        self._undo, self._redo = [], []
+        self.history.clear()
         self.canvas.board = b
         self.canvas.selected = ""
         self._refill_boards()
@@ -970,62 +970,34 @@ class BoardTab(QWidget):
             return
         car = render.PREVIEW_CAR
         right = car is not None and car.front_of(self.canvas.view) == "right"
-        side = self.canvas.view == "side"
-        # good spots on the side of a car, as seen with its front on the left: door, fender, rear quarter, hood, skirt, quarter glass
-        spots = [(.52, .62), (.22, .58), (.78, .58), (.16, .50), (.5, .8), (.66, .45), (.36, .5)]
-        random.shuffle(spots)
         self._snapshot("shuffle")
-        sponsors = 0
-        for it in items:
-            if it["kind"] == "tribal":
-                it["x"], it["y"] = round(random.uniform(.38, .62), 4), round(random.uniform(.5, .62), 4)
-                it["w"] = round(random.uniform(.32, .55), 4)
-                it["rot"] = round(random.choice([0, 0, random.uniform(-6, 6)]), 1)
-                continue
-            x, y = spots[sponsors % len(spots)] if side else (random.uniform(.3, .7), random.uniform(.2, .8))
-            sponsors += 1
-            it["x"] = round(min(1.0, max(0.0, (1 - x if right and side else x) + random.uniform(-.02, .02))), 4)
-            it["y"] = round(y + random.uniform(-.02, .02), 4)
-            it["w"] = round(random.uniform(.09, .2), 4)
-            it["rot"] = round(random.choice([0, 0, random.uniform(-8, 8)]), 1)
-            if it["colour"]["mode"] != "original":
-                it["colour"]["mode"] = random.choice(["sponsor_a", "sponsor_b"])
+        bd.shuffle_items(items, side=self.canvas.view == "side", front_right=right)
         self._selection_changed(self.canvas.selected)
         self._changed(save=True)
         self.status.emit("Shuffled")
 
     # ------------------------------------------------------------------ undo
     def _snapshot(self, tag):
-        """Remember the items before a change; changes with the same tag in a row (a drag, a slider) count as one."""
-        now = time.monotonic()
-        if tag == self._last_tag and now - self._last_time < 1.2:
-            self._last_time = now
-            return
-        self._last_tag, self._last_time = tag, now
-        self._undo.append(copy.deepcopy(self.board.items))
-        del self._undo[:-80]
-        self._redo.clear()
+        """Remember the items before a change (see bd.History)."""
+        self.history.snapshot(self.board.items, tag)
 
     def _restore(self, items):
         self.board.items = items
         keep = self.canvas.selected if self.board.find(self.canvas.selected) else ""
         self.canvas.selected = keep
-        self._last_tag = ""
         self._fill_list()
         self._selection_changed(keep)
         self._changed(save=True)
 
     def undo(self):
-        if not self._undo:
-            return
-        self._redo.append(copy.deepcopy(self.board.items))
-        self._restore(self._undo.pop())
+        items = self.history.undo(self.board.items)
+        if items is not None:
+            self._restore(items)
 
     def redo(self):
-        if not self._redo:
-            return
-        self._undo.append(copy.deepcopy(self.board.items))
-        self._restore(self._redo.pop())
+        items = self.history.redo(self.board.items)
+        if items is not None:
+            self._restore(items)
 
     # ------------------------------------------------------------------ the layout used by the previews
     def _use_layout_toggled(self, _on):

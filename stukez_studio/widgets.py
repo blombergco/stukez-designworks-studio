@@ -18,6 +18,12 @@ def copy_text(text):
 class Heading(QLabel):
     """A page heading with the slash marks of the livery in front of it."""
 
+    MARK_INDENT = 32    # the marks take about 28 px at the largest size, so the text starts after them
+
+    def __init__(self, text=""):
+        super().__init__(text)
+        self.setContentsMargins(self.MARK_INDENT, 0, 0, 0)
+
     def paintEvent(self, e):
         p = QPainter(self)
         p.setRenderHint(QPainter.Antialiasing)
@@ -347,6 +353,9 @@ class LiveryPreview(QWidget):
         self._anim.finished.connect(self._swept_done)
         self.setMinimumHeight(min_h)
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+
+    def preview_changed(self):
+        self.update()
 
     def set_palette(self, d):
         old, self.pal = self.pal, d

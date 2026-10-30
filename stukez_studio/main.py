@@ -8,9 +8,8 @@ from PySide6.QtGui import QAction, QKeySequence
 from PySide6.QtWidgets import (QApplication, QButtonGroup, QComboBox, QDialog, QFileDialog, QGraphicsOpacityEffect, QHBoxLayout, QLabel, QMainWindow,
                                QMessageBox, QSplashScreen, QStackedWidget, QVBoxLayout, QWidget)
 
-from . import __channel__, __version_label__, carrender, render
+from . import __channel__, __version_label__, carrender
 from .backend import Vault, find_vault, looks_like_vault
-from .cars import builtin_cars
 from .page_cars import CarsPage
 from .page_generator import GeneratorPage
 from .page_guides import GuidesPage
@@ -27,6 +26,8 @@ from .welcome import LicencesDialog, WelcomeDialog
 from . import updates
 from . import workspace
 from . import logo
+from . import previews
+from . import selftest
 from . import theme as th
 from .theme import build_qss, install_cut_frames
 
@@ -48,7 +49,7 @@ class MainWindow(QMainWindow):
         self.resize(1680, 980)
 
         self.car_box = QComboBox()
-        carrender.PAINT = "base" if self.settings.value("paint", "") == "base" else ""
+        previews.set_paint("base" if self.settings.value("paint", "") == "base" else "")
         self._restore_car()
         self.projects = ProjectsPage(vault)
         self.generator = GeneratorPage(vault)
@@ -105,7 +106,7 @@ class MainWindow(QMainWindow):
         use.toggled.connect(lambda on: self.settings.setValue("useLayout", on))
         self.workshop.layoutChanged.connect(self._layout_timer.start)
         self._layout_changed()
-        self.cars.placementChanged.connect(self._repaint_previews)
+        self.cars.placementChanged.connect(previews.refresh)
         self.car_box.currentIndexChanged.connect(self._car_picked)
         self.paint_switches = [self.projects.paint, self.generator.paint, self.workshop.board.paint]
         for sw in self.paint_switches:
@@ -262,51 +263,36 @@ class MainWindow(QMainWindow):
         want = keep if keep is not None else self.settings.value("previewCar", "")
         self.car_box.blockSignals(True)
         self.car_box.clear()
-        for b in builtin_cars():
-            self.car_box.addItem(b.name, b)
-        for c in self.vault.cars().cars():
-            self.car_box.addItem(c.name, c)
+        for car in self.vault.cars().all_cars():
+            self.car_box.addItem(car.name, car)
         # the saved car if it still exists, otherwise the first entry (the built-in car)
         i = next((n for n in range(self.car_box.count()) if getattr(self.car_box.itemData(n), "id", None) == want), 0)
         self.car_box.setCurrentIndex(i)
         self.car_box.blockSignals(False)
-        render.set_preview_car(self.car_box.currentData())
+        previews.set_car(self.car_box.currentData())
 
     def _car_picked(self, _i):
         car = self.car_box.currentData()
-        render.set_preview_car(car)
+        previews.set_car(car)
         self.settings.setValue("previewCar", car.id if car else "")
-        self._repaint_previews()
 
     def _paint_picked(self, mode):
         """Gradient or solid colour: one choice for every preview, so all the switches follow it."""
-        carrender.PAINT = mode
+        previews.set_paint(mode)
         self.settings.setValue("paint", mode)
         for sw in self.paint_switches:
             sw.set_mode(mode)
-        self._repaint_previews()
-
-    def _repaint_previews(self):
-        self.projects.view.viewport().update()
-        self.projects.livery.update()
-        self.generator.livery.update()
-        self.workshop.board.refresh_car()
-        self.workshop.gradients.stage.update()
-        self.projects.refresh_on_car()
 
     def _layout_changed(self):
-        """The board the previews use (when ticked) or the plain sponsor plates, and a repaint of every preview."""
+        """The board the previews use (when ticked) or the plain sponsor plates."""
         tab = self.workshop.board
-        render.LAYOUT = tab.board if tab.use_layout.isChecked() else None
-        if render.LAYOUT is not None or getattr(self, "_layout_was_on", False):
-            self._repaint_previews()
-        self._layout_was_on = render.LAYOUT is not None
+        previews.set_layout(tab.board if tab.use_layout.isChecked() else None)
 
     def cars_changed(self):
         cur = self.car_box.currentData()
         carrender.clear_cache()
         self._restore_car(cur.id if cur else "")
-        self._repaint_previews()
+        previews.refresh()
 
     def open_prompt(self, item, project):
         self.go(3)
@@ -346,10 +332,8 @@ def choose_vault(settings):
     via_env = bool(os.environ.get("KAIZEN_VAULT"))
     root = None
     if os.environ.get("KAIZEN_SELFTEST_CREATE"):
-        # smoke test of an installed copy, as on a computer that never ran the program: make a workspace from the
-        # program's own starter files, without the dialog and without looking at saved settings
-        root = workspace.create(os.environ["KAIZEN_SELFTEST_CREATE"], True)
-        os.environ["KAIZEN_VAULT"] = str(root)
+        # a smoke test of an installed copy: no dialog and no saved settings (see selftest.py)
+        root = selftest.create_workspace()
         via_env = True
     else:
         root = find_vault(settings.value("vault", ""))
@@ -391,30 +375,6 @@ def main():
     if splash is not None:
         splash.finish(win)
     shot = os.environ.get("KAIZEN_SELFTEST")
-    if shot:   # lets a built exe prove it works: save a screenshot of the window and quit
-        def selftest():
-            # saving a project is only exercised against a vault chosen explicitly with KAIZEN_VAULT
-            if os.environ.get("KAIZEN_SELFTEST_SAVE") and os.environ.get("KAIZEN_VAULT"):
-                QMessageBox.warning = staticmethod(lambda *a, **k: open(shot + ".err", "w").write(str(a[1:])))
-                win.generator.name.setText("Selftest Palette")
-                win.generator.save()
-            car_dir = os.environ.get("KAIZEN_SELFTEST_CAR")
-            if car_dir and os.environ.get("KAIZEN_VAULT"):   # import a car, preview with it and open the On car tab
-                from pathlib import Path
-                from .cars import find_views, scan_folder
-                car = win.vault.cars().add_car("Selftest Car", find_views(Path(car_dir)), clean=False)
-                zones = dict(car.zones("side"))
-                car.flip_view("side")
-                car.flip_view("side")
-                open(shot + ".txt", "w").write(f"scan found {len(scan_folder(Path(car_dir).parent))} cars; "
-                                               f"flip twice restores zones: {car.zones('side') == zones}")
-                win.cars.reload(select=car.id)
-                win.cars_changed()
-                win.car_box.setCurrentIndex(win.car_box.findText("Selftest Car"))
-                win.projects.select_project(1)
-                win.projects.tabs.setCurrentIndex(win.projects.tabs.indexOf(win.projects.on_car))
-            app.processEvents()
-            win.grab().save(shot)
-            app.quit()
-        QTimer.singleShot(2500, selftest)
+    if shot:    # lets a built exe prove it works (see selftest.py)
+        selftest.arm(app, win, shot)
     return app.exec()

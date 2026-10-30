@@ -236,12 +236,6 @@ def builtin_cars():
     return out
 
 
-def builtin_car():
-    """The default preview car, or None if the files are missing."""
-    cars = builtin_cars()
-    return cars[0] if cars else None
-
-
 class CarLibrary:
     def __init__(self, vault):
         self.vault = vault
@@ -259,6 +253,10 @@ class CarLibrary:
                         continue
             self._cars = out
         return self._cars
+
+    def all_cars(self):
+        """Every car the previews can use: the ones that ship with the program first, then the library's."""
+        return builtin_cars() + self.cars()
 
     def get(self, car_id):
         return next((c for c in self.cars() if c.id == car_id), None)

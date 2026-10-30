@@ -98,6 +98,9 @@ class CarStage(QWidget):
         self.pal = ns
         self.update()
 
+    def preview_changed(self):
+        self.update()
+
     def paintEvent(self, _e):
         p = QPainter(self)
         p.setRenderHint(QPainter.Antialiasing)

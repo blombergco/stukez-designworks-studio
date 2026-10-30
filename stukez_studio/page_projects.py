@@ -344,6 +344,10 @@ class ProjectsPage(QWidget):
         self.on_car.set_project(p)
         self.refresh_on_car()
 
+    def preview_changed(self):
+        self.view.viewport().update()
+        self.refresh_on_car()
+
     def refresh_on_car(self):
         """Render the On car tab if it is the visible one (it takes a moment, so never in the background)."""
         if self.tabs.currentWidget() is self.on_car:
