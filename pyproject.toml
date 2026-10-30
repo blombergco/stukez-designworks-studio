@@ -1,0 +1,14 @@
+[tool.ruff]
+target-version = "py312"
+line-length = 120
+
+[tool.ruff.lint]
+# Start small: syntax errors and pyflakes (unused imports, undefined names).
+# Add more rule sets one at a time, once the code under them is clean.
+select = ["E9", "F"]
+
+[tool.ruff.lint.per-file-ignores]
+# Unused locals left in these scripts, to be looked at (unfinished code?) before they are removed.
+"make_builtin_illustrations.py" = ["F841"]
+"make_default_car.py" = ["F841"]
+"starter/Project Library/Tools/placement_preview.py" = ["F841"]
