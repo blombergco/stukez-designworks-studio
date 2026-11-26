@@ -10,6 +10,7 @@ import json
 import os
 import random
 import re
+import threading
 import time
 import uuid
 from collections import OrderedDict
@@ -20,6 +21,15 @@ import numpy as np
 from PIL import Image
 from PySide6.QtCore import QPointF, QRectF, Qt
 from PySide6.QtGui import QColor, QFont, QFontDatabase, QFontMetrics, QImage, QPainter, QTransform
+
+_PREPARE_LOCK = threading.RLock()     # the logo caches are shared by the window thread and the card thread
+
+
+def prepare(item, pl, folder, need=400):
+    """The item's image coloured and outlined for the palette `pl` (see _prepare_unlocked)."""
+    with _PREPARE_LOCK:
+        return _prepare_unlocked(item, pl, folder, need)
+
 
 from . import carrender
 from . import outlines as ol
@@ -37,6 +47,7 @@ OUTLINE_DEFAULT = 3.0   # outline thickness in percent of the logo's longer side
 CACHE_SIZE = 160
 
 _sources = {}
+_keyed = OrderedDict()
 _prepared = OrderedDict()
 
 
@@ -236,6 +247,19 @@ def _source(path):
     return hit
 
 
+def _keyed_source(path, mt, bg):
+    """The stored image with its background taken out and its margins trimmed. The palette does not change this, so it is
+    made once per file version: the soft key of a 2000 px logo is slow, and every palette used to repeat it."""
+    key = (str(path), mt, bg)
+    if key not in _keyed:
+        _keyed[key] = trim(_background(_source(path)[1], bg))
+        if len(_keyed) > 40:
+            _keyed.popitem(last=False)
+    else:
+        _keyed.move_to_end(key)
+    return _keyed[key]
+
+
 class Prepared:
     """A logo ready to draw: the image with outline, and where the logo itself sits in it."""
 
@@ -249,7 +273,7 @@ def _tier(need):
     return next((t for t in TIERS if t >= need), TIERS[-1])
 
 
-def prepare(item, pl, folder, need=400):
+def _prepare_unlocked(item, pl, folder, need=400):
     """The item's image coloured and outlined for the palette `pl`, big enough for about `need` pixels on its longer side."""
     path = Path(folder) / item["file"]
     colour, outline = resolve_colour(item, pl), resolve_outline(item, pl)
@@ -265,8 +289,7 @@ def prepare(item, pl, folder, need=400):
         _prepared.move_to_end(key)
         return hit
     try:
-        im = _background(_source(path)[1], item["bg"])
-        im = trim(im)
+        im = _keyed_source(path, mt, item["bg"])
         if max(im.size) > tier:
             im = im.resize((max(1, round(im.width * tier / max(im.size))), max(1, round(im.height * tier / max(im.size)))), Image.LANCZOS)
         if colour is not None:

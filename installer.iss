@@ -7,6 +7,13 @@
 #ifndef Channel
   #define Channel ""
 #endif
+; build_installer.ps1 passes the build folder and output folder (outside the vault); these are the defaults for running ISCC by hand
+#ifndef BuildDir
+  #define BuildDir "dist\StukeZ Designworks Studio"
+#endif
+#ifndef OutDir
+  #define OutDir "dist\installer"
+#endif
 #define AppName "StukeZ Designworks Studio"
 #define AppExe "StukeZ Designworks Studio.exe"
 
@@ -19,7 +26,7 @@ AppPublisher=StukeZ Designworks
 DefaultDirName={autopf}\{#AppName}
 DefaultGroupName={#AppName}
 PrivilegesRequired=lowest
-OutputDir=dist\installer
+OutputDir={#OutDir}
 OutputBaseFilename=StukeZ-Designworks-Studio-{#AppVersion}{#Channel}-Setup
 SetupIconFile=assets\icon.ico
 UninstallDisplayIcon={app}\{#AppExe}
@@ -35,7 +42,7 @@ DisableProgramGroupPage=yes
 Name: "desktopicon"; Description: "Create a desktop shortcut"; GroupDescription: "Shortcuts:"; Flags: unchecked
 
 [Files]
-Source: "dist\{#AppName}\*"; DestDir: "{app}"; Flags: recursesubdirs ignoreversion createallsubdirs
+Source: "{#BuildDir}\*"; DestDir: "{app}"; Flags: recursesubdirs ignoreversion createallsubdirs
 
 [Icons]
 Name: "{autoprograms}\{#AppName}"; Filename: "{app}\{#AppExe}"

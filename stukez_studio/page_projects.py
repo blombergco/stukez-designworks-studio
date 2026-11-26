@@ -3,13 +3,14 @@ import os
 import shutil
 import tempfile
 
-from PySide6.QtCore import (QAbstractListModel, QModelIndex, QRectF, QSize, QSortFilterProxyModel, Qt, Signal)
+from PySide6.QtCore import (QAbstractListModel, QModelIndex, QSortFilterProxyModel, Qt, Signal)
 from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import (QAbstractItemView, QApplication, QComboBox, QFileDialog, QHBoxLayout, QLabel, QLineEdit,
                                QListView, QListWidget, QListWidgetItem, QMenu, QMessageBox, QScrollArea,
-                               QSplitter, QStyle, QStyledItemDelegate, QTabWidget, QVBoxLayout, QWidget)
+                               QSplitter, QTabWidget, QVBoxLayout, QWidget)
 
 from . import export, render
+from .card_cache import CardDelegate
 from .swatch import write_ase
 from .compare import CompareDialog
 from .oncar import render_placement
@@ -135,23 +136,14 @@ class ProjectFilter(QSortFilterProxyModel):
         return pa.id < pb.id
 
 
-class CardDelegate(QStyledItemDelegate):
-    SIZE = QSize(308, 236)
-
-    def sizeHint(self, option, index):
-        return self.SIZE
-
-    def paint(self, painter, option, index):
-        p = index.data(Qt.UserRole)
-        rect = QRectF(option.rect).adjusted(6, 6, -6, -6)
-        sub = (", ".join(p.moods[:3]) or "no moods") + (f"  ·  {p.platform}" if p.platform else "")
-        render.draw_card(painter, rect, p, p.name, sub, selected=bool(option.state & QStyle.State_Selected), number=f"{p.id:03d}", plates=False,
-                         hover=bool(option.state & QStyle.State_MouseOver))
-
-
 class ProjectsPage(QWidget):
     openPrompt = Signal(object, object)   # prompt item, project
     status = Signal(str)
+
+    def prebuild_cards(self, progress=None):
+        """Draw all project cards now, before the window opens (the splash shows meanwhile). See CardDelegate.build_now."""
+        dpr = QApplication.primaryScreen().devicePixelRatio()
+        self.card_delegate.build_now(self.model.items, CardDelegate.SIZE.width(), CardDelegate.SIZE.height(), dpr, progress)
 
     def __init__(self, vault):
         super().__init__()
@@ -172,7 +164,9 @@ class ProjectsPage(QWidget):
         self.proxy.sort(0)
         self.view = QListView()
         self.view.setModel(self.proxy)
-        self.view.setItemDelegate(CardDelegate())
+        self.card_delegate = CardDelegate()
+        self.view.setItemDelegate(self.card_delegate)
+        self.card_delegate.more.connect(self.view.viewport().update)
         self.view.setViewMode(QListView.IconMode)
         self.view.setResizeMode(QListView.Adjust)
         self.view.setMovement(QListView.Static)

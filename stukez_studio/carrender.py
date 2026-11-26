@@ -4,6 +4,7 @@ The livery is first drawn flat with Qt, then multiplied with the shading of the 
 shadows stay. This needs a *clean grey base* capture; for a capture that already carries a livery only the silhouette
 is used (with a soft top-to-bottom shade) so the old livery never leaks into the preview.
 """
+import threading
 from collections import OrderedDict
 from math import cos, radians, sin
 
@@ -11,6 +12,16 @@ import numpy as np
 from PIL import Image, ImageFilter
 from PySide6.QtCore import QPointF, QRectF, Qt
 from PySide6.QtGui import QBrush, QColor, QFont, QImage, QLinearGradient, QPainter, QPen
+
+# the Projects grid draws cards on a background thread and the windows draw on the window thread: one lock keeps the caches sane
+_LOCK = threading.RLock()
+
+
+def render(car, view, d, width, plates=None, plate_scale=1.0):
+    """The car view in the palette `d` as a QImage, `width` pixels wide (see _render_unlocked)."""
+    with _LOCK:
+        return _render_unlocked(car, view, d, width, plates, plate_scale)
+
 
 
 GLASS = np.array([16, 15, 26], dtype=np.float32)
@@ -214,7 +225,7 @@ def _flat(w, h, car, view, d, plates, plate_scale=1.0):
     return np.frombuffer(ptr, np.uint8).reshape(h, img.bytesPerLine() // 4, 4)[:, :w].copy()
 
 
-def render(car, view, d, width, plates=None, plate_scale=1.0):
+def _render_unlocked(car, view, d, width, plates=None, plate_scale=1.0):
     """The car view in the palette `d` (Proj, pk.Project or dict-like namespace) as a QImage, `width` pixels wide."""
     if view not in car.views():
         return None

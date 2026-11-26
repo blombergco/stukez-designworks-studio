@@ -2,6 +2,10 @@
 $ErrorActionPreference = "Stop"
 Set-Location $PSScriptRoot
 
+# Build files stay out of the vault: work files in %TEMP%, the build itself in $out (dist\ is not used).
+$work = Join-Path $env:TEMP "stukez_studio_build"
+$out = "C:\Builds\StukeZ Designworks Studio"
+
 function Check($what) { if ($LASTEXITCODE -ne 0) { throw "$what failed (exit code $LASTEXITCODE)" } }
 
 py -3 -m pip install --quiet PySide6 markdown pillow pyinstaller; Check "pip install"
@@ -17,13 +21,15 @@ $exArgs = $excludes | ForEach-Object { "--exclude-module"; "PySide6.$_" }
 py -3 -m PyInstaller --noconfirm --clean --onefile --windowed --name "StukeZ Designworks Studio" `
     --icon "assets\icon.ico" --collect-submodules markdown --add-data "starter;starter" --add-data "legal;legal" --add-data "stukez_studio\builtin;stukez_studio\builtin" `
     --hidden-import argparse --hidden-import dataclasses --hidden-import datetime --hidden-import shutil --hidden-import collections `
+    --distpath "$out\dist" --workpath "$work\build" --specpath $work `
     @exArgs run_studio.py
 Check "PyInstaller"
 
+$built = "$out\dist\StukeZ Designworks Studio.exe"
 try {
-    Copy-Item "dist\StukeZ Designworks Studio.exe" "StukeZ Designworks Studio.exe" -Force -ErrorAction Stop
+    Copy-Item $built "StukeZ Designworks Studio.exe" -Force -ErrorAction Stop
     Write-Host "Done: $PSScriptRoot\StukeZ Designworks Studio.exe"
 } catch {   # the running program keeps its exe locked
-    Copy-Item "dist\StukeZ Designworks Studio.exe" "StukeZ Designworks Studio (new).exe" -Force
+    Copy-Item $built "StukeZ Designworks Studio (new).exe" -Force
     Write-Host "StukeZ Designworks Studio.exe is in use. The new build is saved as 'StukeZ Designworks Studio (new).exe'; close the app and rename it."
 }

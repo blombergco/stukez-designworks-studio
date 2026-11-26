@@ -369,6 +369,14 @@ def main():
     app.setOverrideCursor(Qt.WaitCursor)
     try:
         win = MainWindow(Vault(root), settings)
+        # the project cards are drawn now, while the splash shows, so the window opens already smooth
+        n = len(win.projects.model.items)
+
+        def card_progress(done, total):
+            if splash is not None and (done == total or done % 20 == 0):
+                splash.showMessage(f"Preparing project cards {done}/{total}", Qt.AlignBottom | Qt.AlignHCenter, Qt.white)
+                app.processEvents()
+        win.projects.prebuild_cards(card_progress if n else None)
     finally:
         app.restoreOverrideCursor()
     win.show()
