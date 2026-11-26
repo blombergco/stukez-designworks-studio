@@ -4,6 +4,10 @@ All notable changes to StukeZ Designworks Studio. Versions follow `major.minor.p
 adds something, a major changes how your data is stored. The newest release is the top entry; the text under it is what
 the update dialog shows.
 
+## 1.3.2
+
+- New workspaces come with 236 synthetic test projects (random names and palettes, no real design data) besides the six examples, so you can try the grid with many projects and make your own colour combinations. They are plain palettes: no week status or other details.
+
 ## 1.3.1
 
 - The Projects grid is smooth from the moment the program starts: every project card is drawn once while the splash shows ("Preparing project cards"), then scrolling only copies the finished pictures.

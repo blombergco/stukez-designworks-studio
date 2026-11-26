@@ -19,15 +19,15 @@ tags: [project]
 
 Pale lilac sinking into tar black, with lime-to-mint gradient tribals.
 
-| Element | Type | Hex | Swatch |
-|---|---|---|---|
-| Base | Gradient | `#C9B6F2` → `#1B1722` | <span style="display:inline-block;width:4em;height:1.1em;border:1px solid #888;border-radius:3px;background:linear-gradient(90deg,#C9B6F2,#1B1722)"></span> |
-| Tribals | Gradient | `#E5FF5C` → `#6BE3A5` | <span style="display:inline-block;width:4em;height:1.1em;border:1px solid #888;border-radius:3px;background:linear-gradient(90deg,#E5FF5C,#6BE3A5)"></span> |
-| Tribal outline | Solid | `#120F1A` | <span style="display:inline-block;width:4em;height:1.1em;border:1px solid #888;border-radius:3px;background:#120F1A"></span> |
-| Sponsor A | Solid | `#FF4D6D` | <span style="display:inline-block;width:4em;height:1.1em;border:1px solid #888;border-radius:3px;background:#FF4D6D"></span> |
-| Sponsor A outline | Solid | `#120F1A` | <span style="display:inline-block;width:4em;height:1.1em;border:1px solid #888;border-radius:3px;background:#120F1A"></span> |
-| Sponsor B | Solid | `#FFFFFF` | <span style="display:inline-block;width:4em;height:1.1em;border:1px solid #888;border-radius:3px;background:#FFFFFF"></span> |
-| Sponsor B outline | Solid | `#120F1A` | <span style="display:inline-block;width:4em;height:1.1em;border:1px solid #888;border-radius:3px;background:#120F1A"></span> |
+| Element           | Type     | Hex                   | Swatch                                                                                                                                                      |
+| ----------------- | -------- | --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Base              | Gradient | `#C9B6F2` → `#1B1722` | <span style="display:inline-block;width:4em;height:1.1em;border:1px solid #888;border-radius:3px;background:linear-gradient(90deg,#C9B6F2,#1B1722)"></span> |
+| Tribals           | Gradient | `#E5FF5C` → `#6BE3A5` | <span style="display:inline-block;width:4em;height:1.1em;border:1px solid #888;border-radius:3px;background:linear-gradient(90deg,#E5FF5C,#6BE3A5)"></span> |
+| Tribal outline    | Solid    | `#120F1A`             | <span style="display:inline-block;width:4em;height:1.1em;border:1px solid #888;border-radius:3px;background:#120F1A"></span>                                |
+| Sponsor A         | Solid    | `#FF4D6D`             | <span style="display:inline-block;width:4em;height:1.1em;border:1px solid #888;border-radius:3px;background:#FF4D6D"></span>                                |
+| Sponsor A outline | Solid    | `#120F1A`             | <span style="display:inline-block;width:4em;height:1.1em;border:1px solid #888;border-radius:3px;background:#120F1A"></span>                                |
+| Sponsor B         | Solid    | `#FFFFFF`             | <span style="display:inline-block;width:4em;height:1.1em;border:1px solid #888;border-radius:3px;background:#FFFFFF"></span>                                |
+| Sponsor B outline | Solid    | `#120F1A`             | <span style="display:inline-block;width:4em;height:1.1em;border:1px solid #888;border-radius:3px;background:#120F1A"></span>                                |
 
 ## Design vocabulary
 

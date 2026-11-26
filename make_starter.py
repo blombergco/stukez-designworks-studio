@@ -62,6 +62,11 @@ def starter(vault):
             (out / "Project Library/Swatches").mkdir(parents=True, exist_ok=True)
             shutil.copyfile(ase, out / "Project Library/Swatches" / ase.name)
         n += 1
+    # the synthetic performance-test projects (starter_projects/) come with every new workspace
+    for folder in sorted((HERE / "starter_projects").iterdir()):
+        if folder.is_dir():
+            shutil.copytree(folder, out / "Project Library/Projects" / folder.name)
+            n += 1
     from stukez_studio import __version__
     (out / "VERSION").write_text(__version__ + "\n", encoding="utf-8")
     print(f"starter/: {sum(1 for _ in out.rglob('*') if _.is_file())} files, {n} example palettes, version {__version__}")

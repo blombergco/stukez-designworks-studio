@@ -12,11 +12,11 @@ pillow 13.0.0
   Licence: MIT-CMU
   Home: Release notes, https://pillow.readthedocs.io/en/stable/releasenotes/index.html
 
-numpy 2.4.1
+numpy 2.5.5
   Licence: BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0
   Home: homepage, https://numpy.org
 
-Markdown 3.11.2
+Markdown 3.11.4
   Licence: BSD-3-Clause
   Home: Homepage, https://Python-Markdown.github.io/
 
