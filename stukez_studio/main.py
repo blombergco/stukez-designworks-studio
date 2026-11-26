@@ -5,8 +5,8 @@ import sys
 
 from PySide6.QtCore import QEasingCurve, QPropertyAnimation, QSettings, Qt, QTimer
 from PySide6.QtGui import QAction, QKeySequence
-from PySide6.QtWidgets import (QApplication, QButtonGroup, QComboBox, QDialog, QFileDialog, QGraphicsOpacityEffect, QHBoxLayout, QLabel, QMainWindow,
-                               QMessageBox, QSplashScreen, QStackedWidget, QVBoxLayout, QWidget)
+from PySide6.QtWidgets import (QApplication, QButtonGroup, QComboBox, QDialog, QFileDialog, QFrame, QGraphicsOpacityEffect, QHBoxLayout, QLabel,
+                               QMainWindow, QMessageBox, QScrollArea, QSplashScreen, QStackedWidget, QVBoxLayout, QWidget)
 
 from . import __channel__, __version_label__, carrender
 from .backend import Vault, find_vault, looks_like_vault
@@ -62,7 +62,12 @@ class MainWindow(QMainWindow):
         pages = [self.projects, self.generator, self.cars, self.prompts, self.sponsors, self.guides, self.workshop, self.howto]
         self.stack = QStackedWidget()
         for p in pages:
-            self.stack.addWidget(p)
+            # each page scrolls instead of forcing the window to stay as wide as its widest row, so the window can be made narrower
+            wrap = QScrollArea()
+            wrap.setWidget(p)
+            wrap.setWidgetResizable(True)
+            wrap.setFrameShape(QFrame.NoFrame)
+            self.stack.addWidget(wrap)
             p.status.connect(self.flash)
 
         side = self.rail = Rail()
