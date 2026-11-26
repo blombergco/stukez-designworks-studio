@@ -46,7 +46,7 @@ jobs:
           $env:KAIZEN_SELFTEST = (Join-Path $PWD "smoke.png")
           $env:KAIZEN_SELFTEST_SAVE = "1"
           # a windowed program: wait for it explicitly, a plain call would return at once
-          $p = Start-Process -FilePath "dist/StukeZ Designworks Studio/StukeZ Designworks Studio.exe" -Wait -PassThru
+          $p = Start-Process -FilePath "C:\Builds\StukeZ Designworks Studio\dist\StukeZ Designworks Studio\StukeZ Designworks Studio.exe" -Wait -PassThru
           if ($p.ExitCode -ne 0) { throw "The program exited with code $($p.ExitCode)" }
           if (-not (Test-Path smoke.png)) { throw "The program did not start" }
           if (Test-Path smoke.png.err) { throw (Get-Content smoke.png.err -Raw) }
@@ -65,7 +65,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            dist/installer/*-Setup.exe
-            dist/installer/*-Setup.exe.sha256
+            C:/Builds/StukeZ Designworks Studio/installer/*-Setup.exe
+            C:/Builds/StukeZ Designworks Studio/installer/*-Setup.exe.sha256
           body_path: RELEASE_NOTES.md
           generate_release_notes: false
