@@ -3,13 +3,95 @@ from datetime import date
 
 from PySide6.QtCore import Signal
 from PySide6.QtGui import QBrush, QColor
-from PySide6.QtWidgets import (QAbstractItemView, QCheckBox, QComboBox, QHBoxLayout, QHeaderView, QLineEdit, QSplitter,
-                               QTableWidget, QTableWidgetItem, QVBoxLayout, QWidget)
+from PySide6.QtWidgets import (QAbstractItemView, QCheckBox, QComboBox, QDialog, QDialogButtonBox, QFormLayout, QHBoxLayout, QHeaderView,
+                               QLineEdit, QMessageBox, QSplitter, QTableWidget, QTableWidgetItem, QVBoxLayout, QWidget)
 
 from .widgets import NoteView, button, copy_text, label
 
 MATCH_TEXT = {"match": "fits your build", "universal": "universal", "varies": "check fitment", "": ""}
 MATCH_COLOUR = {"match": "#7ee0a0", "universal": "#8bb8ff", "varies": "#ffcf70", "": "#a8999c"}
+MANUAL_NOTE = "Added by hand in StukeZ Designworks Studio."
+
+
+class AddSponsorDialog(QDialog):
+    """Add one sponsor product by hand. Saved as a brand note in the Drift Sponsor Database (or as a new row in an existing one)."""
+
+    def __init__(self, vault, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Add sponsor")
+        self.vault = vault
+        d = vault.dblib
+        self.brand = QLineEdit()
+        self.category = QComboBox()
+        for c in d.CATEGORIES:
+            self.category.addItem(c, c)
+        self.product = QLineEdit()
+        self.chassis = QLineEdit(placeholderText="e.g. S13, R32  (leave empty if not chassis-specific)")
+        self.engine = QLineEdit(placeholderText="e.g. SR20DET, RB26DETT  (optional)")
+        self.notes = QLineEdit()
+        form = QFormLayout(self)
+        form.addRow("Brand", self.brand)
+        form.addRow("Category", self.category)
+        form.addRow("Product / line", self.product)
+        form.addRow("Chassis", self.chassis)
+        form.addRow("Engine", self.engine)
+        form.addRow("Notes", self.notes)
+        form.addRow(label("Fits any of the chassis or engines listed. Empty chassis and engine means universal.", "muted"))
+        box = QDialogButtonBox(QDialogButtonBox.Save | QDialogButtonBox.Cancel)
+        box.accepted.connect(self._accept)
+        box.rejected.connect(self.reject)
+        form.addRow(box)
+
+    def _tokens(self, text):
+        return self.vault.dblib.split_tokens(text.replace(";", ","))
+
+    def _accept(self):
+        d = self.vault.dblib
+        if not self.brand.text().strip() or not self.product.text().strip():
+            QMessageBox.warning(self, "Add sponsor", "Brand and product are needed.")
+            return
+        tokens = self._tokens(self.chassis.text()) + self._tokens(self.engine.text())
+        unknown = [t for t in tokens if not d.known_token(t)]
+        if unknown:
+            QMessageBox.warning(self, "Add sponsor", "Not in the vocabulary (check the spelling): " + ", ".join(unknown))
+            return
+        self.accept()
+
+    def values(self):
+        tokens = self._tokens(self.chassis.text()) + self._tokens(self.engine.text())
+        return {"brand": self.brand.text().strip(), "cat": self.category.currentData(), "item": self.product.text().strip(),
+                "fits": ", ".join(tokens) if tokens else "Universal", "notes": self.notes.text().strip()}
+
+
+def add_sponsor_to_database(vault, v):
+    """Write one sponsor row. A new brand gets a new note; an existing brand gets the row added to its table. Returns the path."""
+    d = vault.dblib
+    row = f"| {d.cell(v['cat'])} | {d.cell(v['item'])} | {d.cell(v['fits'])} | {d.cell(v['notes'])} |"
+    known = next((b["path"] for b in vault.brands() if b["name"].strip().lower() == v["brand"].lower()), None)
+    if known is not None:
+        path = known
+    else:
+        folder = vault.db / d.category_folder(v["cat"])
+        folder.mkdir(parents=True, exist_ok=True)
+        path = folder / (d.slug_filename(v["brand"]) + ".md")
+    if path.exists() and known is None:
+        raise ValueError(f"{path.name} already exists but is not a brand note; rename it or pick another brand name")
+    if path.exists():
+        lines = path.read_text(encoding="utf-8").split("\n")
+        end = next((i for i, ln in enumerate(lines) if ln.startswith("## Drift scene")), None)
+        if end is None:
+            raise ValueError(f"{path.name} has no Drift scene section; add the row by hand")
+        at = end
+        while at > 0 and not lines[at - 1].strip():
+            at -= 1
+        lines.insert(at, row)
+        path.write_text("\n".join(lines), encoding="utf-8", newline="\n")
+        return path
+    brand = {"name": v["brand"], "country": "Added by hand", "region": "", "website": "", "primary_category": v["cat"],
+             "categories": [v["cat"]], "confidence": "unverified", "verified": date.today().isoformat(), "summary": MANUAL_NOTE,
+             "products": [{"cat": v["cat"], "item": v["item"], "fits": v["fits"], "notes": v["notes"]}], "sources": []}
+    path.write_text(d.render_brand(brand), encoding="utf-8", newline="\n")
+    return path
 
 
 class SponsorsPage(QWidget):
@@ -50,6 +132,7 @@ class SponsorsPage(QWidget):
         build.addWidget(self.chassis, 1)
         build.addWidget(self.engine, 1)
         build.addWidget(self.universal)
+        build.addWidget(button("Add sponsor…", slot=self.add_sponsor))
         build.addWidget(button("Copy list", slot=self.copy_list))
         build.addWidget(button("Save as vault note", slot=self.save_note))
 
@@ -137,6 +220,19 @@ class SponsorsPage(QWidget):
             note = f" — {r['notes']}" if r["notes"] else ""
             out.append(f"- [[{r['brand']['name']}]] ({r['brand'].get('country', '')}): {r['item']}{kind}{note}")
         return "\n".join(out) + "\n", title
+
+    def add_sponsor(self):
+        dlg = AddSponsorDialog(self.vault, self)
+        if dlg.exec() != QDialog.Accepted:
+            return
+        try:
+            path = add_sponsor_to_database(self.vault, dlg.values())
+        except (OSError, ValueError) as e:
+            QMessageBox.warning(self, "Add sponsor", str(e))
+            return
+        self.vault.invalidate()
+        self.refresh()
+        self.status.emit(f"Added to {path.relative_to(self.vault.db).as_posix()}")
 
     def copy_list(self):
         copy_text(self._markdown()[0])

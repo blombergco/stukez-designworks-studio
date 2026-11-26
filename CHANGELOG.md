@@ -4,6 +4,10 @@ All notable changes to StukeZ Designworks Studio. Versions follow `major.minor.p
 adds something, a major changes how your data is stored. The newest release is the top entry; the text under it is what
 the update dialog shows.
 
+## 1.3.4
+
+- **Add sponsor…** on the Sponsors page adds a sponsor product by hand: brand, category, product, chassis, engine and notes. It is saved in the vault's Drift Sponsor Database: a new brand gets its own note, and an existing brand gets the row added to its table. Chassis and engine are checked against the vocabulary.
+
 ## 1.3.3
 
 - The window can be made narrower: the pages scroll sideways when the window is narrow, instead of keeping the window as wide as their widest row. On a small screen you can now make the window narrower as well as shorter.
