@@ -4,6 +4,13 @@ All notable changes to StukeZ Designworks Studio. Versions follow `major.minor.p
 adds something, a major changes how your data is stored. The newest release is the top entry; the text under it is what
 the update dialog shows.
 
+## 1.3.1
+
+- The Projects grid is smooth from the moment the program starts: every project card is drawn once while the splash shows ("Preparing project cards"), then scrolling only copies the finished pictures.
+- Hover and selection are drawn on top of the cards, so moving the mouse no longer redraws the whole card.
+- Card pictures are kept within a memory budget based on your RAM (32 to 128 MB), so weaker PCs use less memory.
+- Fixed a build problem where the installer could not find its starter files.
+
 ## 1.3.0
 
 - The Workshop tab *Sponsors and outlines* is gone: the colours of the sponsors and their outlines are set on New project (with a live preview) and, per logo, on *Place on car*.
